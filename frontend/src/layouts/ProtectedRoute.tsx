@@ -1,7 +1,8 @@
 import { Navigate } from 'react-router-dom';
+import type { ReactElement } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector';
 
-export function ProtectedRoute({ children }: { children: JSX.Element }) {
+export function ProtectedRoute({ children }: { children: ReactElement }) {
   const { user, initialized } = useAppSelector((state) => state.auth);
 
   if (!initialized) {

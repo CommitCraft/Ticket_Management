@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
-import { User } from '../models/User.js';
+import { User, type IUserDocument } from '../models/User.js';
 import { ApiError } from '../utils/api-error.js';
 import { verifyAccessToken } from '../utils/jwt.js';
 
@@ -20,7 +20,7 @@ export async function protect(req: Request, _res: Response, next: NextFunction) 
 
   try {
     const payload = verifyAccessToken(token);
-    const user = await User.findById(payload.userId).populate('departmentId');
+    const user = await User.findById(payload.userId).populate('departmentId') as IUserDocument | null;
     if (!user || user.status !== 'active') {
       next(new ApiError(401, 'Session expired or user inactive'));
       return;

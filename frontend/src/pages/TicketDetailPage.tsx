@@ -549,6 +549,10 @@ export function TicketDetailPage() {
       toast.error("Ticket ID not found");
       return;
     }
+    if (isChatClosed) {
+      toast.info("This ticket is closed. Chat is disabled.");
+      return;
+    }
     try {
       const formData = new FormData();
       formData.append("message", values.message);
@@ -650,6 +654,7 @@ export function TicketDetailPage() {
       };
     }),
   ];
+  const isChatClosed = ["resolved", "closed"].includes(ticket.status);
 
   return (
     <div className="space-y-6">
@@ -662,7 +667,7 @@ export function TicketDetailPage() {
             <Button variant="outline" onClick={() => navigate("/tickets")}>
               <ArrowLeft className="mr-2 h-4 w-4" /> Back
             </Button>
-            {currentUser && currentUser.roleKey !== "user" && (
+            {currentUser && currentUser.roleKey !== "user" && !isChatClosed && (
               <Button
                 onClick={() =>
                   changeTicketStatus(ticket._id, "resolved").then(loadTicket)
@@ -715,10 +720,22 @@ export function TicketDetailPage() {
                     </span>
                   </p>
                 </div>
-                <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-200">
-                  Live
+                <Badge
+                  className={
+                    isChatClosed
+                      ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                      : "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-200"
+                  }
+                >
+                  {isChatClosed ? "Closed" : "Live"}
                 </Badge>
               </div>
+
+              {isChatClosed ? (
+                <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+                  This ticket is closed. Chat is locked and new replies are disabled.
+                </div>
+              ) : null}
 
               <div className="space-y-5">
                 {conversationItems.map((item, index) => {
@@ -823,12 +840,13 @@ export function TicketDetailPage() {
                     <Textarea
                       placeholder="Write something..."
                       className="min-h-10 flex-1 resize-none border-0 bg-transparent px-2 py-1.5 text-sm shadow-none focus-visible:ring-0"
+                      disabled={isChatClosed}
                       {...register("message")}
                       onKeyDown={handleComposerKeyDown}
                     />
                     <Button
                       type="submit"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isChatClosed}
                       className="h-12 w-12 rounded-full p-0"
                     >
                       {isSubmitting ? (
@@ -863,6 +881,7 @@ export function TicketDetailPage() {
                       <button
                         type="button"
                         onClick={openFilePicker}
+                        disabled={isChatClosed}
                         className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
                         aria-label="Attach files"
                       >
@@ -871,6 +890,7 @@ export function TicketDetailPage() {
                       <button
                         type="button"
                         onClick={openImagePicker}
+                        disabled={isChatClosed}
                         className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
                         aria-label="Add image"
                       >
@@ -879,6 +899,7 @@ export function TicketDetailPage() {
                       <button
                         type="button"
                         onClick={() => setShowEmojiPicker((current) => !current)}
+                        disabled={isChatClosed}
                         className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
                         aria-label="Emoji picker"
                       >
@@ -887,6 +908,7 @@ export function TicketDetailPage() {
                       <button
                         type="button"
                         onClick={handleMicClick}
+                        disabled={isChatClosed}
                         className={`flex h-9 w-9 items-center justify-center rounded-full border transition ${
                           isListening
                             ? "border-red-300 bg-red-50 text-red-600 dark:border-red-600 dark:bg-red-950/40 dark:text-red-300"

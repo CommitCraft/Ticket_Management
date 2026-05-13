@@ -30,7 +30,9 @@ export const changePasswordSchema = z.object({
 
 export const updateProfileSchema = z.object({
   fullName: z.string().min(2).optional(),
-  email: z.string().email().optional()
-}).refine((value) => Boolean(value.fullName || value.email), {
+  email: z.string().email().optional(),
+  phoneNumber: z.string().regex(/^[0-9]{7,20}$/, 'Phone must be 7-20 digits only').optional(),
+  companyName: z.string().min(2).max(100).optional()
+}).refine((value) => Boolean(value.fullName || value.email || value.phoneNumber || value.companyName), {
   message: 'At least one profile field is required'
 });

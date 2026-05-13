@@ -4,6 +4,7 @@ import { TicketReply } from '../models/TicketReply.js';
 import { User } from '../models/User.js';
 import { ApiError } from '../utils/api-error.js';
 import { createNotification } from './notification.service.js';
+import { sendTicketWhatsAppAlert } from './whatsapp.service.js';
 
 export function generateTicketId() {
   const random = Math.random().toString(36).slice(2, 7).toUpperCase();
@@ -31,7 +32,7 @@ export async function autoAssignAgent(departmentId: string) {
 }
 
 export async function createTicketWithWorkflow(input: {
-  companyName: string;
+  companyName?: string;
   lineOrStation: string;
   ip: string;
   currentOperatorPhoneNumber: string;
@@ -41,14 +42,23 @@ export async function createTicketWithWorkflow(input: {
   departmentId: string;
   priority: string;
   createdBy: string;
+  createdByName?: string;
+  createdByRole?: string;
   attachments?: Array<{ name: string; url: string; mimeType?: string; size?: number }>;
   assignedAgentId?: string;
 }) {
+  const user = await User.findById(input.createdBy).select('companyName');
+  const resolvedCompanyName = input.companyName?.trim() || user?.companyName?.trim();
+  if (!resolvedCompanyName) {
+    throw new ApiError(400, 'Company name is missing from the user profile');
+  }
+
   const slaDueAt = await calculateSlaDueAt(input.departmentId, input.priority);
   const assignedAgentId = input.assignedAgentId ?? (await autoAssignAgent(input.departmentId));
   const ticket = await Ticket.create({
     ticketId: generateTicketId(),
     ...input,
+    companyName: resolvedCompanyName,
     assignedAgentId,
     slaDueAt,
     status: assignedAgentId ? 'assigned' : 'open',
@@ -85,6 +95,20 @@ export async function createTicketWithWorkflow(input: {
       }
     }
   }
+
+  void sendTicketWhatsAppAlert({
+    event: 'created',
+    ticketId: ticket.ticketId,
+    companyName: ticket.companyName,
+    subject: ticket.subject,
+    occurredAt: ticket.createdAt,
+    priority: ticket.priority,
+    status: ticket.status,
+    actorName: input.createdByName,
+    actorRole: input.createdByRole
+  }).catch((error) => {
+    console.error('WhatsApp alert failed for ticket creation', error);
+  });
 
   return ticket;
 }

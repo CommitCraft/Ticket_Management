@@ -19,6 +19,10 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),
+  WHATSAPP_API_URL: z.string().url().optional(),
+  WHATSAPP_ID_INSTANCE: z.string().optional(),
+  WHATSAPP_API_TOKEN_INSTANCE: z.string().optional(),
+  WHATSAPP_GROUP_ID: z.string().optional(),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development')
 });
 

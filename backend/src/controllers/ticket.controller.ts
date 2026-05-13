@@ -7,6 +7,7 @@ import { asyncHandler } from '../utils/async-handler.js';
 import { createNotification } from '../services/notification.service.js';
 import { logAudit } from '../services/audit.service.js';
 import { addTicketReply, createTicketWithWorkflow } from '../services/ticket.service.js';
+import { sendTicketWhatsAppAlert } from '../services/whatsapp.service.js';
 import { isValidImageType, isValidDocumentType } from '../middleware/upload.js';
 
 function buildAttachments(files: Express.Multer.File[] | undefined) {
@@ -65,7 +66,10 @@ export const listTickets = asyncHandler(async (req: Request, res: Response) => {
 export const createTicket = asyncHandler(async (req: Request, res: Response) => {
   const ticket = await createTicketWithWorkflow({
     ...req.body,
+    companyName: req.user?.companyName ?? req.body.companyName,
     createdBy: req.user!._id.toString(),
+    createdByName: req.user?.fullName,
+    createdByRole: req.user?.roleKey,
     attachments: buildAttachments(req.files as Express.Multer.File[] | undefined)
   });
 
@@ -106,10 +110,38 @@ export const updateTicket = asyncHandler(async (req: Request, res: Response) => 
     throw new ApiError(404, 'Ticket not found');
   }
 
+  const previousStatus = ticket.status;
   Object.assign(ticket, req.body);
   ticket.lastActivityAt = new Date();
+  if (req.body.status && ['resolved', 'closed'].includes(req.body.status) && previousStatus !== req.body.status) {
+    ticket.closedAt = new Date();
+  }
   ticket.timeline.push({ action: 'updated', note: 'Ticket updated', by: req.user?._id.toString(), metadata: req.body });
   await ticket.save();
+
+  if (req.body.status && ['resolved', 'closed'].includes(req.body.status) && previousStatus !== req.body.status) {
+    await createNotification({
+      userId: String(ticket.createdBy),
+      type: 'ticket_resolved',
+      title: `Ticket ${ticket.ticketId} updated`,
+      body: `Status changed to ${req.body.status}`,
+      ticketId: ticket._id.toString()
+    });
+
+    void sendTicketWhatsAppAlert({
+      event: 'closed',
+      ticketId: ticket.ticketId,
+      companyName: ticket.companyName,
+      subject: ticket.subject,
+      occurredAt: ticket.closedAt ?? new Date(),
+      status: ticket.status,
+      priority: ticket.priority,
+      actorName: req.user?.fullName,
+      actorRole: req.user?.roleKey
+    }).catch((error) => {
+      console.error('WhatsApp alert failed for ticket close', error);
+    });
+  }
 
   await logAudit({ actorId: req.user?._id.toString(), action: 'update_ticket', entityType: 'Ticket', entityId: ticket._id.toString(), after: ticket, ip: req.ip, userAgent: req.get('user-agent') ?? '' });
   res.json({ ticket });
@@ -135,6 +167,7 @@ export const changeTicketStatus = asyncHandler(async (req: Request, res: Respons
     throw new ApiError(404, 'Ticket not found');
   }
 
+  const previousStatus = ticket.status;
   ticket.status = req.body.status;
   if (req.body.status === 'resolved' || req.body.status === 'closed') {
     ticket.closedAt = new Date();
@@ -155,6 +188,24 @@ export const changeTicketStatus = asyncHandler(async (req: Request, res: Respons
   }
   ticket.timeline.push({ action: 'status_changed', note: `Status changed to ${req.body.status}`, by: req.user?._id.toString(), metadata: { status: req.body.status } });
   await ticket.save();
+
+  if (req.body.status === 'resolved' || req.body.status === 'closed') {
+    if (previousStatus !== req.body.status) {
+      void sendTicketWhatsAppAlert({
+        event: 'closed',
+        ticketId: ticket.ticketId,
+        companyName: ticket.companyName,
+        subject: ticket.subject,
+        occurredAt: ticket.closedAt ?? new Date(),
+        status: ticket.status,
+        priority: ticket.priority,
+        actorName: req.user?.fullName,
+        actorRole: req.user?.roleKey
+      }).catch((error) => {
+        console.error('WhatsApp alert failed for ticket close', error);
+      });
+    }
+  }
   res.json({ ticket });
 });
 
@@ -180,7 +231,7 @@ export const replyToTicket = asyncHandler(async (req: Request, res: Response) =>
   // Super admins can reply to any ticket
 
   const reply = await addTicketReply({
-    ticketId: req.params.id,
+    ticketId: String(req.params.id),
     authorId: req.user!._id.toString(),
     message: req.body.message,
     isInternal: req.body.isInternal,

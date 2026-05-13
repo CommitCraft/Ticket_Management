@@ -10,7 +10,7 @@ export const listNotifications = asyncHandler(async (req: Request, res: Response
 });
 
 export const markRead = asyncHandler(async (req: Request, res: Response) => {
-  const notification = await markNotificationAsRead(req.params.id);
+  const notification = await markNotificationAsRead(String(req.params.id));
   res.json({ notification });
 });
 

@@ -24,10 +24,11 @@ const userSchema = new Schema(
 
 userSchema.set('toJSON', {
   transform: (_doc, ret) => {
-    delete ret.passwordHash;
-    delete ret.refreshTokenHash;
-    delete ret.passwordResetTokenHash;
-    return ret;
+    const safeRet = ret as Record<string, unknown>;
+    delete safeRet.passwordHash;
+    delete safeRet.refreshTokenHash;
+    delete safeRet.passwordResetTokenHash;
+    return safeRet;
   }
 });
 
@@ -39,5 +40,6 @@ export type IUser = InferSchemaType<typeof userSchema>;
 export interface IUserDocument extends IUser {
   _id: Types.ObjectId;
   comparePassword(password: string): Promise<boolean>;
+  save(): Promise<IUserDocument>;
 }
 export const User = model('User', userSchema);

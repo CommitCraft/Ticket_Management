@@ -7,10 +7,11 @@ import { rotateUserRole } from '../services/auth.service.js';
 
 function safeUser(user: any) {
   const plain = user?.toObject ? user.toObject() : user;
-  delete plain.passwordHash;
-  delete plain.refreshTokenHash;
-  delete plain.passwordResetTokenHash;
-  return plain;
+  const safePlain = plain as Record<string, unknown>;
+  delete safePlain.passwordHash;
+  delete safePlain.refreshTokenHash;
+  delete safePlain.passwordResetTokenHash;
+  return safePlain;
 }
 
 export const listUsers = asyncHandler(async (_req: Request, res: Response) => {
@@ -68,6 +69,14 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
       throw new ApiError(409, 'Email already in use');
     }
     user.email = nextEmail;
+  }
+
+  if (req.body.companyName !== undefined) {
+    user.companyName = String(req.body.companyName).trim();
+  }
+
+  if (req.body.phoneNumber !== undefined) {
+    user.phoneNumber = String(req.body.phoneNumber).trim();
   }
 
   await user.save();

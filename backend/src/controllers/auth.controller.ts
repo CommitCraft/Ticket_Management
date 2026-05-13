@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { env } from '../config/env.js';
 import { ROLE_KEYS } from '../constants/roles.js';
-import { User } from '../models/User.js';
+import { User, type IUserDocument } from '../models/User.js';
 import { asyncHandler } from '../utils/async-handler.js';
 import { ApiError } from '../utils/api-error.js';
 import { clearAuthCookies, setAuthCookies } from '../utils/cookie.js';
@@ -18,10 +18,11 @@ import {
 
 function sanitizeUser(user: any) {
   const plain = user?.toObject ? user.toObject() : user;
-  delete plain.passwordHash;
-  delete plain.refreshTokenHash;
-  delete plain.passwordResetTokenHash;
-  return plain;
+  const safePlain = plain as Record<string, unknown>;
+  delete safePlain.passwordHash;
+  delete safePlain.refreshTokenHash;
+  delete safePlain.passwordResetTokenHash;
+  return safePlain;
 }
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
@@ -43,7 +44,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const email = String(req.body.email).toLowerCase().trim();
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email }) as IUserDocument | null;
   if (!user) {
     throw new ApiError(401, 'Invalid credentials');
   }
@@ -65,7 +66,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 export const logout = asyncHandler(async (req: Request, res: Response) => {
   const refreshToken = req.cookies?.refreshToken;
   if (refreshToken) {
-    const user = await User.findOne({ refreshTokenHash: hashToken(refreshToken) });
+    const user = await User.findOne({ refreshTokenHash: hashToken(refreshToken) }) as IUserDocument | null;
     if (user) {
       await clearRefreshToken(String(user._id));
     }
@@ -80,7 +81,7 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(401, 'Refresh token required');
   }
 
-  const user = await User.findOne({ refreshTokenHash: hashToken(refreshToken) });
+  const user = await User.findOne({ refreshTokenHash: hashToken(refreshToken) }) as IUserDocument | null;
   if (!user) {
     throw new ApiError(401, 'Invalid refresh session');
   }
@@ -134,7 +135,7 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
 });
 
 export const changePassword = asyncHandler(async (req: Request, res: Response) => {
-  const user = await User.findById(req.user?._id);
+  const user = await User.findById(req.user?._id) as IUserDocument | null;
   if (!user) {
     throw new ApiError(404, 'User not found');
   }

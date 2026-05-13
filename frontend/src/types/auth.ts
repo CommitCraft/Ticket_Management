@@ -17,6 +17,7 @@ export interface User {
   departmentId?: DepartmentSummary | string;
   status: 'active' | 'disabled';
   avatarUrl?: string;
+  lastLoginAt?: string;
   createdAt?: string;
   updatedAt?: string;
 }
