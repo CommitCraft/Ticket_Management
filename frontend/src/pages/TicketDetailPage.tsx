@@ -60,9 +60,6 @@ export function TicketDetailPage() {
   const [replies, setReplies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [previewAttachment, setPreviewAttachment] =
-    useState<TicketAttachment | null>(null);
-  const [previewLoadError, setPreviewLoadError] = useState(false);
   const [showDetailsOnMobile, setShowDetailsOnMobile] = useState(false);
   const [showAttachmentsOnMobile, setShowAttachmentsOnMobile] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -161,10 +158,6 @@ export function TicketDetailPage() {
     };
   }, []);
 
-  useEffect(() => {
-    setPreviewLoadError(false);
-  }, [previewAttachment]);
-
   const handleFileSelection = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files ?? []);
     if (selectedFiles.length === 0) return;
@@ -235,21 +228,18 @@ export function TicketDetailPage() {
     return `${apiOrigin}${normalizedPath}`;
   };
 
+  const openAttachmentInNewTab = (url?: string) => {
+    const resolvedUrl = resolveAttachmentUrl(url);
+    if (!resolvedUrl) return;
+    window.open(resolvedUrl, "_blank", "noopener,noreferrer");
+  };
+
   const isImageAttachment = (attachment: TicketAttachment) => {
     const mimeType = attachment.mimeType?.toLowerCase() || "";
     return (
       mimeType.startsWith("image/") ||
       /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(attachment.url)
     );
-  };
-
-  const isPdfAttachment = (attachment: TicketAttachment) => {
-    const mimeType = attachment.mimeType?.toLowerCase() || "";
-    return mimeType.includes("pdf") || /\.pdf$/i.test(attachment.url);
-  };
-
-  const canInlinePreview = (attachment: TicketAttachment) => {
-    return isImageAttachment(attachment) || isPdfAttachment(attachment);
   };
 
   const getConversationDateLabel = (value: string) => {
@@ -314,7 +304,7 @@ export function TicketDetailPage() {
                 >
                   <button
                     type="button"
-                    onClick={() => setPreviewAttachment(attachment)}
+                    onClick={() => openAttachmentInNewTab(attachment.url)}
                     className="block w-full text-left"
                     aria-label={`Preview ${attachment.name}`}
                   >
@@ -373,7 +363,7 @@ export function TicketDetailPage() {
                     <span
                       className={isOwnMessage ? "text-blue-100" : "text-slate-500"}
                     >
-                      Tap image to preview
+                      Tap image to open in new tab
                     </span>
                     <a
                       href={resolveAttachmentUrl(attachment.url)}
@@ -428,19 +418,17 @@ export function TicketDetailPage() {
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    {canInlinePreview(attachment) ? (
-                      <button
-                        type="button"
-                        onClick={() => setPreviewAttachment(attachment)}
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${
-                          isOwnMessage
-                            ? "bg-white/15 text-white hover:bg-white/25"
-                            : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                        }`}
-                      >
-                        Preview
-                      </button>
-                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => openAttachmentInNewTab(attachment.url)}
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${
+                        isOwnMessage
+                          ? "bg-white/15 text-white hover:bg-white/25"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                      }`}
+                    >
+                      Preview
+                    </button>
                     <a
                       href={resolveAttachmentUrl(attachment.url)}
                       download
@@ -551,18 +539,6 @@ export function TicketDetailPage() {
   useEffect(() => {
     repliesLengthRef.current = replies.length;
   }, [replies.length]);
-
-  useEffect(() => {
-    const handleKeyDown: EventListener = (event) => {
-      const keyboardEvent = event as globalThis.KeyboardEvent;
-      if (keyboardEvent.key === "Escape") {
-        setPreviewAttachment(null);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -1116,82 +1092,6 @@ export function TicketDetailPage() {
         </Card>
       </div>
 
-      {previewAttachment ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          onClick={() => setPreviewAttachment(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-        >
-          <div
-            onClick={(event) => event.stopPropagation()}
-            className="relative w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-950"
-          >
-            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
-              <div className="min-w-0">
-                <p className="truncate font-semibold text-slate-900 dark:text-white">
-                  {previewAttachment.name}
-                </p>
-                <p className="text-xs text-slate-500">Click outside to close</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <a
-                  href={resolveAttachmentUrl(previewAttachment.url)}
-                  download
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-                >
-                  <Download className="mr-2 h-4 w-4" /> Download
-                </a>
-                <Button
-                  variant="outline"
-                  onClick={() => setPreviewAttachment(null)}
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-            <div className="max-h-[80vh] overflow-auto bg-slate-100 p-4 dark:bg-slate-900">
-              <div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-slate-950">
-                {isPdfAttachment(previewAttachment) ? (
-                  <div className="space-y-2 p-2">
-                    <iframe
-                      src={resolveAttachmentUrl(previewAttachment.url)}
-                      title={previewAttachment.name}
-                      className="h-[78vh] w-full rounded-xl border border-slate-200 dark:border-slate-700"
-                    />
-                    <p className="px-2 text-xs text-slate-500">
-                      If PDF preview doesn't load in your browser, use Open/Download.
-                    </p>
-                  </div>
-                ) : previewLoadError ? (
-                  <div className="flex min-h-[280px] flex-col items-center justify-center gap-3 p-6 text-center">
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                      Preview not available for this file.
-                    </p>
-                    <a
-                      href={resolveAttachmentUrl(previewAttachment.url)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-                    >
-                      <Download className="h-4 w-4" /> Open file
-                    </a>
-                  </div>
-                ) : (
-                  <img
-                    src={resolveAttachmentUrl(previewAttachment.url)}
-                    alt={previewAttachment.name}
-                    className="mx-auto max-h-[78vh] w-full object-contain"
-                    onError={() => setPreviewLoadError(true)}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
