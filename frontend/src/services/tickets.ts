@@ -30,3 +30,15 @@ export async function changeTicketStatus(id: string, status: string) {
   const response = await api.patch<{ ticket: Ticket }>(`/api/tickets/${id}/status`, { status });
   return response.data;
 }
+
+export async function listAssignableUsers(departmentId?: string) {
+  const response = await api.get<{ items: Array<{ _id: string; fullName: string; email: string; roleKey: string }> }>('/api/tickets/assignable-users', {
+    params: { departmentId }
+  });
+  return response.data.items;
+}
+
+export async function assignTicketToUser(ticketId: string, assignedAgentId: string) {
+  const response = await api.patch<{ ticket: Ticket }>(`/api/tickets/${ticketId}/assign`, { assignedAgentId });
+  return response.data;
+}

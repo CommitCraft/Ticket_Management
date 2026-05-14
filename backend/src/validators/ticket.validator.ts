@@ -32,3 +32,7 @@ export const replyTicketSchema = z.object({
   message: z.string().min(1),
   isInternal: z.boolean().optional()
 });
+
+export const assignTicketSchema = z.object({
+  assignedAgentId: z.string().min(1)
+});

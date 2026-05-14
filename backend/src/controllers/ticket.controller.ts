@@ -63,6 +63,25 @@ export const listTickets = asyncHandler(async (req: Request, res: Response) => {
   res.json({ items, pagination: { total, page: pageNumber, limit: pageSize } });
 });
 
+export const listAssignableUsers = asyncHandler(async (req: Request, res: Response) => {
+  const { departmentId } = req.query as { departmentId?: string };
+  const filter: Record<string, unknown> = {
+    status: 'active',
+    roleKey: { $in: ['support_agent', 'admin', 'super_admin'] }
+  };
+
+  if (departmentId) {
+    filter.departmentId = departmentId;
+  }
+
+  const items = await User.find(filter)
+    .select('fullName email roleKey departmentId')
+    .populate('departmentId', 'name slug')
+    .sort({ fullName: 1 });
+
+  res.json({ items });
+});
+
 export const createTicket = asyncHandler(async (req: Request, res: Response) => {
   const ticket = await createTicketWithWorkflow({
     ...req.body,
@@ -153,11 +172,21 @@ export const assignTicket = asyncHandler(async (req: Request, res: Response) => 
     throw new ApiError(404, 'Ticket not found');
   }
 
+  const assignee = await User.findById(req.body.assignedAgentId);
+  if (!assignee || assignee.status !== 'active') {
+    throw new ApiError(404, 'Assignee not found or inactive');
+  }
+
+  if (!['support_agent', 'admin', 'super_admin'].includes(assignee.roleKey)) {
+    throw new ApiError(400, 'Selected user cannot be assigned to tickets');
+  }
+
   ticket.assignedAgentId = req.body.assignedAgentId;
   ticket.status = 'assigned';
-  ticket.timeline.push({ action: 'assigned', note: 'Ticket assigned', by: req.user?._id.toString(), metadata: req.body });
+  ticket.timeline.push({ action: 'assigned', note: `Ticket assigned to ${assignee.fullName}`, by: req.user?._id.toString(), metadata: req.body });
   await ticket.save();
   await createNotification({ userId: req.body.assignedAgentId, type: 'ticket_assigned', title: `Ticket ${ticket.ticketId} assigned`, body: ticket.subject, ticketId: ticket._id.toString() });
+  await logAudit({ actorId: req.user?._id.toString(), action: 'assign_ticket', entityType: 'Ticket', entityId: ticket._id.toString(), after: ticket, ip: req.ip, userAgent: req.get('user-agent') ?? '' });
   res.json({ ticket });
 });
 

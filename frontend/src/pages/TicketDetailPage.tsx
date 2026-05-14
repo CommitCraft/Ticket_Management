@@ -40,9 +40,10 @@ import {
 } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
+import { Select } from "../components/ui/select";
 import { Textarea } from "../components/ui/textarea";
 import { api } from "../services/api";
-import { changeTicketStatus } from "../services/tickets";
+import { assignTicketToUser, changeTicketStatus, listAssignableUsers } from "../services/tickets";
 import { useAppSelector } from "../hooks/useAppSelector";
 import type { TicketAttachment } from "../types/ticket";
 
@@ -65,6 +66,9 @@ export function TicketDetailPage() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [assignableUsers, setAssignableUsers] = useState<Array<{ _id: string; fullName: string; email: string; roleKey: string }>>([]);
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState<string>("");
+  const [isAssigning, setIsAssigning] = useState(false);
   const conversationEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -541,6 +545,43 @@ export function TicketDetailPage() {
   }, [replies.length]);
 
   useEffect(() => {
+    const departmentId =
+      ticket?.departmentId && typeof ticket.departmentId === "object"
+        ? ticket.departmentId._id
+        : undefined;
+
+    if (!id || !departmentId) {
+      setAssignableUsers([]);
+      return;
+    }
+
+    const canAssign =
+      currentUser?.permissions?.includes("ticket:assign") ||
+      currentUser?.roleKey === "super_admin";
+
+    if (!canAssign) {
+      setAssignableUsers([]);
+      return;
+    }
+
+    void listAssignableUsers(String(departmentId))
+      .then((items) => {
+        setAssignableUsers(items ?? []);
+      })
+      .catch(() => {
+        setAssignableUsers([]);
+      });
+  }, [id, ticket?.departmentId, currentUser?.permissions, currentUser?.roleKey]);
+
+  useEffect(() => {
+    const assignedId =
+      ticket?.assignedAgentId && typeof ticket.assignedAgentId === "object"
+        ? ticket.assignedAgentId._id
+        : "";
+    setSelectedAssigneeId(assignedId || "");
+  }, [ticket?.assignedAgentId]);
+
+  useEffect(() => {
     scrollToBottom();
   }, [replies]);
 
@@ -572,6 +613,28 @@ export function TicketDetailPage() {
     } catch (error: any) {
       console.error("Failed to send reply:", error);
       toast.error(error?.response?.data?.message || "Failed to send reply");
+    }
+  };
+
+  const handleAssignTicket = async () => {
+    if (!id) {
+      return;
+    }
+
+    if (!selectedAssigneeId) {
+      toast.error("Please select a user to assign this ticket");
+      return;
+    }
+
+    try {
+      setIsAssigning(true);
+      await assignTicketToUser(id, selectedAssigneeId);
+      toast.success("Ticket assigned successfully");
+      await loadTicket();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to assign ticket");
+    } finally {
+      setIsAssigning(false);
     }
   };
 
@@ -655,6 +718,9 @@ export function TicketDetailPage() {
     }),
   ];
   const isChatClosed = ["resolved", "closed"].includes(ticket.status);
+  const canAssignTickets =
+    currentUser?.permissions?.includes("ticket:assign") ||
+    currentUser?.roleKey === "super_admin";
 
   return (
     <div className="space-y-6">
@@ -1034,6 +1100,38 @@ export function TicketDetailPage() {
                   )
                 : null}
             </div>
+
+            {canAssignTickets ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900/40">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Ticket Assignment
+                </p>
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <Select
+                    value={selectedAssigneeId}
+                    onChange={(event) => setSelectedAssigneeId(event.target.value)}
+                    disabled={isAssigning || assignableUsers.length === 0}
+                  >
+                    <option value="">Select user</option>
+                    {assignableUsers.map((user) => (
+                      <option key={user._id} value={user._id}>
+                        {user.fullName} ({user.roleKey})
+                      </option>
+                    ))}
+                  </Select>
+                  <Button
+                    type="button"
+                    onClick={handleAssignTicket}
+                    disabled={isAssigning || !selectedAssigneeId}
+                  >
+                    {isAssigning ? "Assigning..." : "Assign"}
+                  </Button>
+                </div>
+                {assignableUsers.length === 0 ? (
+                  <p className="mt-2 text-xs text-slate-500">No assignable users found for this department.</p>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900/40">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">

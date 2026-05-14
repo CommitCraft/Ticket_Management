@@ -14,6 +14,7 @@ import { api } from '../services/api';
 const schema = z.object({
   key: z.string().min(2),
   name: z.string().min(2),
+  module: z.string().min(2),
   description: z.string().optional()
 });
 
@@ -59,6 +60,7 @@ export function PermissionsPage() {
     setEditingId(permission._id);
     setValue('key', permission.key);
     setValue('name', permission.name);
+    setValue('module', permission.module || '');
     setValue('description', permission.description || '');
   };
 
@@ -86,6 +88,7 @@ export function PermissionsPage() {
           <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit(onSubmit)}>
             <Input placeholder="Permission key (e.g., ticket_read)" {...register('key')} disabled={!!editingId} />
             <Input placeholder="Permission name" {...register('name')} />
+            <Input placeholder="Module (e.g., ticket)" {...register('module')} />
             <Textarea className="md:col-span-2" placeholder="Description" {...register('description')} />
             <div className="md:col-span-2 flex justify-end gap-2">
               {editingId && (
@@ -108,6 +111,7 @@ export function PermissionsPage() {
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold">Key</th>
                   <th className="px-4 py-3 text-left font-semibold">Name</th>
+                  <th className="px-4 py-3 text-left font-semibold">Module</th>
                   <th className="px-4 py-3 text-left font-semibold">Description</th>
                   <th className="px-4 py-3 text-right font-semibold">Actions</th>
                 </tr>
@@ -119,6 +123,7 @@ export function PermissionsPage() {
                       <Badge variant="outline" className="font-mono">{permission.key}</Badge>
                     </td>
                     <td className="px-4 py-3 font-medium">{permission.name}</td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{permission.module || '-'}</td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{permission.description || '-'}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">

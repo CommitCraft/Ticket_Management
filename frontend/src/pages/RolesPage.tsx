@@ -173,7 +173,7 @@ export function RolesPage() {
                 <Button variant="outline" size="sm" onClick={() => handleEdit(role)}>
                   Edit
                 </Button>
-                <Button variant="destructive" size="sm" onClick={() => handleDelete(role._id, role.name)}>
+                <Button variant="destructive" size="sm" onClick={() => handleDelete(role._id, role.name)} disabled={Boolean(role.isSystem)}>
                   Delete
                 </Button>
               </div>

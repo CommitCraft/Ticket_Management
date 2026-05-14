@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Select } from '../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from '../components/ui/table';
-import { listTickets } from '../services/tickets';
+import { assignTicketToUser, listAssignableUsers, listTickets } from '../services/tickets';
 import { Badge } from '../components/ui/badge';
 import { EmptyState } from '../components/layout/EmptyState';
 import { useAppSelector } from '../hooks/useAppSelector';
@@ -15,6 +16,9 @@ import { useAppSelector } from '../hooks/useAppSelector';
 export function TicketsPage() {
   const currentUser = useAppSelector((state) => state.auth.user);
   const [items, setItems] = useState<any[]>([]);
+  const [assignableUsers, setAssignableUsers] = useState<Array<{ _id: string; fullName: string; email: string; roleKey: string }>>([]);
+  const [selectedAssignees, setSelectedAssignees] = useState<Record<string, string>>({});
+  const [assigningTicketId, setAssigningTicketId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('');
   const [priority, setPriority] = useState('');
@@ -33,9 +37,44 @@ export function TicketsPage() {
     setItems(data.items);
   };
 
+  const loadAssignableUsers = async () => {
+    try {
+      const users = await listAssignableUsers();
+      setAssignableUsers(users);
+    } catch (error) {
+      setAssignableUsers([]);
+    }
+  };
+
   useEffect(() => {
     void loadTickets();
   }, []);
+
+  useEffect(() => {
+    const canAssign = currentUser?.permissions?.includes('ticket:assign') || currentUser?.roleKey === 'super_admin';
+    if (canAssign) {
+      void loadAssignableUsers();
+    }
+  }, [currentUser?.permissions, currentUser?.roleKey]);
+
+  const handleQuickAssign = async (ticketId: string) => {
+    const assignedAgentId = selectedAssignees[ticketId];
+    if (!assignedAgentId) {
+      toast.error('Select a user to assign this ticket');
+      return;
+    }
+
+    try {
+      setAssigningTicketId(ticketId);
+      await assignTicketToUser(ticketId, assignedAgentId);
+      toast.success('Ticket assigned');
+      await loadTickets();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to assign ticket');
+    } finally {
+      setAssigningTicketId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -108,6 +147,7 @@ export function TicketsPage() {
                     <TableHeaderCell className="text-slate-700 dark:text-slate-200">📝 Subject</TableHeaderCell>
                     <TableHeaderCell className="text-slate-700 dark:text-slate-200">⚠️ Priority</TableHeaderCell>
                     <TableHeaderCell className="text-slate-700 dark:text-slate-200">⚡ Status</TableHeaderCell>
+                    <TableHeaderCell className="text-slate-700 dark:text-slate-200">👥 Assign</TableHeaderCell>
                     <TableHeaderCell className="text-slate-700 dark:text-slate-200">📅 Created</TableHeaderCell>
                     <TableHeaderCell className="text-slate-700 dark:text-slate-200">🔄 Updated</TableHeaderCell>
                   </>
@@ -195,6 +235,28 @@ export function TicketsPage() {
                         }`}>
                           {ticket.status.replace(/_/g, ' ')}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-slate-600 dark:text-slate-400">
+                        {currentUser?.permissions?.includes('ticket:assign') || currentUser?.roleKey === 'super_admin' ? (
+                          <div className="flex min-w-[240px] items-center gap-2">
+                            <Select
+                              value={selectedAssignees[ticket._id] ?? ''}
+                              onChange={(event) => setSelectedAssignees((current) => ({ ...current, [ticket._id]: event.target.value }))}
+                            >
+                              <option value="">Select user</option>
+                              {assignableUsers.map((user) => (
+                                <option key={user._id} value={user._id}>
+                                  {user.fullName} ({user.roleKey})
+                                </option>
+                              ))}
+                            </Select>
+                            <Button type="button" size="sm" onClick={() => void handleQuickAssign(ticket._id)} disabled={assigningTicketId === ticket._id}>
+                              {assigningTicketId === ticket._id ? 'Assigning...' : 'Assign'}
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm text-slate-600 dark:text-slate-400 font-medium">
                         {format(new Date(ticket.createdAt), 'dd MMM yyyy')}

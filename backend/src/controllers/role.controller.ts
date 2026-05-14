@@ -26,10 +26,16 @@ export const updateRole = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const deleteRole = asyncHandler(async (req: Request, res: Response) => {
-  const role = await Role.findByIdAndDelete(req.params.id);
+  const role = await Role.findById(req.params.id);
   if (!role) {
     throw new ApiError(404, 'Role not found');
   }
+
+  if (role.isSystem) {
+    throw new ApiError(400, 'System roles cannot be deleted');
+  }
+
+  await role.deleteOne();
   await logAudit({ actorId: req.user?._id.toString(), action: 'delete_role', entityType: 'Role', entityId: role._id.toString(), before: role, ip: req.ip, userAgent: req.get('user-agent') ?? '' });
   res.status(204).send();
 });

@@ -12,7 +12,7 @@ export async function updateUser(id: string, payload: Record<string, unknown>) {
 }
 
 export async function listRoles() {
-  const response = await api.get<{ items: Array<{ _id: string; key: string; name: string; permissions: string[] }> }>('/api/roles');
+  const response = await api.get<{ items: Array<{ _id: string; key: string; name: string; description?: string; permissions: string[]; isSystem?: boolean }> }>('/api/roles');
   return response.data.items;
 }
 
