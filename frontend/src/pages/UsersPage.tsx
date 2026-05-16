@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { useForm } from 'react-hook-form';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Card, CardContent } from '../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from '../components/ui/table';
-import { listRoles, listUsers, updateUser } from '../services/users';
+import { listRoles, listUsers, updateUser, createUser } from '../services/users';
 import { api } from '../services/api';
 import { Select } from '../components/ui/select';
 import { Button } from '../components/ui/button';
@@ -17,6 +18,20 @@ export function UsersPage() {
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm({
+    defaultValues: {
+      fullName: '',
+      email: '',
+      password: '',
+      companyName: '',
+      phoneNumber: '',
+      roleKey: 'user',
+      departmentId: ''
+    }
+  });
 
   const load = async () => {
     const [nextUsers, nextRoles, nextDepartments] = await Promise.all([
@@ -61,6 +76,47 @@ export function UsersPage() {
     await load();
   };
 
+  const onCreateUserSubmit = async (data: any) => {
+    try {
+      // Basic validation
+      if (!data.fullName || data.fullName.length < 2) {
+        toast.error('Full name is required (min 2 characters)');
+        return;
+      }
+      if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        toast.error('Valid email is required');
+        return;
+      }
+      if (!data.password || data.password.length < 8) {
+        toast.error('Password must be at least 8 characters');
+        return;
+      }
+      if (data.phoneNumber && !/^[0-9]{7,20}$/.test(data.phoneNumber)) {
+        toast.error('Phone must be 7-20 digits (or leave empty)');
+        return;
+      }
+
+      setIsCreating(true);
+      await createUser({
+        fullName: data.fullName,
+        email: data.email,
+        password: data.password,
+        companyName: data.companyName || undefined,
+        phoneNumber: data.phoneNumber || undefined,
+        roleKey: data.roleKey || 'user',
+        departmentId: data.departmentId || undefined
+      });
+      toast.success('User created successfully');
+      reset();
+      setShowCreateModal(false);
+      await load();
+    } catch (error) {
+      toast.error((error as any)?.message || 'Failed to create user');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader title="Users" description="Manage system users, statuses, and role assignments." />
@@ -87,7 +143,7 @@ export function UsersPage() {
       </div>
 
       <Card className="border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-        <CardContent className="grid gap-3 border-b border-slate-200 p-4 dark:border-slate-800 md:grid-cols-4">
+        <CardContent className="grid gap-3 border-b border-slate-200 p-4 dark:border-slate-800 md:grid-cols-5">
           <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, company, phone, email, role, department" />
           <Select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>
             <option value="">All Roles</option>
@@ -100,6 +156,9 @@ export function UsersPage() {
           </Select>
           <Button variant="secondary" onClick={() => { setQuery(''); setRoleFilter(''); setStatusFilter(''); }}>
             Clear Filters
+          </Button>
+          <Button onClick={() => setShowCreateModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+            Create User
           </Button>
         </CardContent>
 
@@ -189,6 +248,85 @@ export function UsersPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="w-full max-w-md border-slate-200 dark:border-slate-800">
+            <CardContent className="space-y-4 p-6">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Create New User</h2>
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Add a new user to the system</p>
+              </div>
+
+              <form onSubmit={handleSubmit(onCreateUserSubmit)} className="space-y-4">
+                <div>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Full Name *</label>
+                  <Input {...register('fullName')} placeholder="John Doe" className="mt-1" />
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Email *</label>
+                  <Input {...register('email')} type="email" placeholder="john@example.com" className="mt-1" />
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Password *</label>
+                  <Input {...register('password')} type="password" placeholder="••••••••" className="mt-1" />
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Company Name</label>
+                  <Input {...register('companyName')} placeholder="ACME Corp" className="mt-1" />
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Phone Number</label>
+                  <Input {...register('phoneNumber')} type="tel" inputMode="numeric" placeholder="9876543210" className="mt-1" />
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Role</label>
+                  <Select {...register('roleKey')} className="mt-1">
+                    <option value="user">User</option>
+                    <option value="support_agent">Support Agent</option>
+                    <option value="admin">Admin</option>
+                    <option value="super_admin">Super Admin</option>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Department</label>
+                  <Select {...register('departmentId')} className="mt-1">
+                    <option value="">No Department</option>
+                    {departments.map((dept) => <option key={dept._id} value={dept._id}>{dept.name}</option>)}
+                  </Select>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      reset();
+                    }}
+                    disabled={isCreating}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={isCreating}
+                  >
+                    {isCreating ? 'Creating...' : 'Create User'}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

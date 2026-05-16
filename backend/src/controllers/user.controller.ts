@@ -3,7 +3,7 @@ import { User } from '../models/User.js';
 import { asyncHandler } from '../utils/async-handler.js';
 import { ApiError } from '../utils/api-error.js';
 import { logAudit } from '../services/audit.service.js';
-import { rotateUserRole } from '../services/auth.service.js';
+import { rotateUserRole, createUserWithRole } from '../services/auth.service.js';
 
 function safeUser(user: any) {
   const plain = user?.toObject ? user.toObject() : user;
@@ -17,6 +17,20 @@ function safeUser(user: any) {
 export const listUsers = asyncHandler(async (_req: Request, res: Response) => {
   const users = await User.find().sort({ createdAt: -1 }).populate('departmentId');
   res.json({ items: users.map(safeUser) });
+});
+
+export const createUser = asyncHandler(async (req: Request, res: Response) => {
+  const user = await createUserWithRole({
+    fullName: req.body.fullName,
+    companyName: req.body.companyName,
+    phoneNumber: req.body.phoneNumber,
+    email: req.body.email,
+    password: req.body.password,
+    roleKey: req.body.roleKey,
+    departmentId: req.body.departmentId
+  });
+  await logAudit({ actorId: req.user?._id.toString(), action: 'create_user', entityType: 'User', entityId: user._id.toString(), after: user, ip: req.ip, userAgent: req.get('user-agent') ?? '' });
+  res.status(201).json({ user: safeUser(user) });
 });
 
 export const getUser = asyncHandler(async (req: Request, res: Response) => {
@@ -77,6 +91,10 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
 
   if (req.body.phoneNumber !== undefined) {
     user.phoneNumber = String(req.body.phoneNumber).trim();
+  }
+
+  if (req.body.whatsappPhone !== undefined) {
+    user.whatsappPhone = String(req.body.whatsappPhone).trim();
   }
 
   await user.save();

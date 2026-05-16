@@ -7,6 +7,7 @@ const userSchema = new Schema(
     fullName: { type: String, required: true, trim: true },
     companyName: { type: String, default: '', trim: true },
     phoneNumber: { type: String, default: '', trim: true },
+    whatsappPhone: { type: String, default: '', trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
     roleKey: { type: String, required: true, enum: Object.values(ROLE_KEYS), default: ROLE_KEYS.USER },

@@ -16,14 +16,24 @@ import { StatCard } from '../components/layout/StatCard';
 import { PageHeader } from '../components/layout/PageHeader';
 import { getReportSummary, getMyReportSummary } from '../services/reports';
 import { listTickets } from '../services/tickets';
+import { listDepartments } from '../services/users';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { Link } from 'react-router-dom';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
+const DEPARTMENT_CHART_COLORS = ['#0ea5e9', '#8b5cf6', '#22c55e', '#f97316', '#2563eb', '#ef4444', '#14b8a6', '#eab308'];
+
+type DepartmentChartItem = {
+  fullName: string;
+  count: number;
+  color: string;
+};
+
 export function DashboardPage() {
   const user = useAppSelector((state) => state.auth.user);
   const [summary, setSummary] = useState<any>(null);
+  const [departments, setDepartments] = useState<Array<{ _id: string; name: string }>>([]);
   const [myTickets, setMyTickets] = useState<any[]>([]);
   const [ticketPage, setTicketPage] = useState(1);
   const ticketPageSize = 5;
@@ -39,17 +49,26 @@ export function DashboardPage() {
     async function load() {
       try {
         if (user?.roleKey === 'user') {
-          const report = await getMyReportSummary();
+          const [report, departmentsList] = await Promise.all([
+            getMyReportSummary(),
+            listDepartments().catch(() => [])
+          ]);
           if (!mounted) return;
           setSummary(report);
+          setDepartments(departmentsList);
           const tickets = await listTickets({ limit: 20 });
           if (!mounted) return;
           setMyTickets(tickets.items ?? []);
         } else {
-          const [report, tickets] = await Promise.all([getReportSummary(), listTickets({ limit: 20 })]);
+          const [report, tickets, departmentsList] = await Promise.all([
+            getReportSummary(),
+            listTickets({ limit: 20 }),
+            listDepartments().catch(() => [])
+          ]);
           if (!mounted) return;
           setSummary(report);
           setMyTickets(tickets.items ?? []);
+          setDepartments(departmentsList);
         }
       } catch (err: any) {
         console.error('Failed loading dashboard data:', err);
@@ -72,10 +91,24 @@ export function DashboardPage() {
     datasets: [{ label: 'Tickets', data: priorityData, backgroundColor: ['#2563eb', '#14b8a6', '#f59e0b', '#ef4444'] }]
   }), [priorityData, priorityLabels]);
 
+  const departmentNameById = useMemo(() => new Map(departments.map((department) => [department._id, department.name])), [departments]);
+
+  const departmentChartItems = useMemo<DepartmentChartItem[]>(() => {
+    const items = summary?.byDepartment ?? [];
+    return items.map((item: any, index: number) => {
+      const fullName = departmentNameById.get(String(item._id)) ?? String(item._id);
+      return {
+        fullName,
+        count: item.count,
+        color: DEPARTMENT_CHART_COLORS[index % DEPARTMENT_CHART_COLORS.length]
+      };
+    });
+  }, [summary?.byDepartment, departmentNameById]);
+
   const departmentChart = useMemo(() => ({
-    labels: summary?.byDepartment?.map((item: any) => String(item._id)) ?? [],
-    datasets: [{ label: 'Departments', data: summary?.byDepartment?.map((item: any) => item.count) ?? [], backgroundColor: ['#0ea5e9', '#8b5cf6', '#22c55e', '#f97316'] }]
-  }), [summary]);
+    labels: departmentChartItems.map((item: DepartmentChartItem) => item.fullName),
+    datasets: [{ label: 'Departments', data: departmentChartItems.map((item: DepartmentChartItem) => item.count), backgroundColor: departmentChartItems.map((item: DepartmentChartItem) => item.color) }]
+  }), [departmentChartItems]);
 
   const getStatusTone = (status: string) => {
     if (status === 'open') return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800';
@@ -93,10 +126,10 @@ export function DashboardPage() {
       <PageHeader
         title="Dashboard"
         description={`Operational overview for ${user?.roleKey?.replace('_', ' ') ?? 'your'} workspace.`}
-        actions={<Link className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-blue-500 dark:hover:bg-blue-400" to="/tickets/new">Raise Ticket</Link>}
+        actions={<Link className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 dark:bg-blue-500 dark:hover:bg-blue-400" to="/tickets/new">Raise Ticket</Link>}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard title={user?.roleKey === 'user' ? 'My Tickets' : 'Total Tickets'} value={summary?.summary?.totalTickets ?? 0} description={user?.roleKey === 'user' ? 'Tickets you created' : 'All active and historical tickets'} />
         <StatCard title="Open Tickets" value={summary?.summary?.openTickets ?? 0} description={user?.roleKey === 'user' ? 'Your open tickets' : 'Needs attention'} />
         <StatCard title="Resolved Tickets" value={summary?.summary?.resolvedTickets ?? 0} description={user?.roleKey === 'user' ? 'Your resolved tickets' : 'Resolved and awaiting closure'} />
@@ -108,8 +141,8 @@ export function DashboardPage() {
         )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="h-full overflow-hidden">
+      <div className="grid gap-3 lg:grid-cols-2">
+        <Card className="h-full overflow-hidden p-4">
           <CardHeader>
             <CardTitle>Priority distribution</CardTitle>
           </CardHeader>
@@ -124,26 +157,36 @@ export function DashboardPage() {
             />
           </CardContent>
         </Card>
-        <Card className="h-full overflow-hidden">
+        <Card className="h-full overflow-hidden p-4">
           <CardHeader>
             <CardTitle>Department load</CardTitle>
           </CardHeader>
-          <CardContent className="flex h-[320px] items-center justify-center xl:h-[360px]">
-            <div className="h-full w-full max-w-md">
+          <CardContent className="h-[320px] xl:h-[360px]">
+            <div className="mx-auto h-[220px] w-full max-w-md sm:h-[250px]">
               <Doughnut
                 data={departmentChart}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
-                  plugins: { legend: { position: 'bottom' } }
+                  cutout: '62%',
+                  plugins: { legend: { display: false } }
                 }}
               />
+            </div>
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {departmentChartItems.map((item: DepartmentChartItem) => (
+                <div key={item.fullName} className="flex items-center gap-2 rounded-md border border-slate-200 px-2 py-1.5 dark:border-slate-700">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: item.color }} />
+                  <span className="min-w-0 flex-1 truncate text-xs font-medium text-slate-700 dark:text-slate-300" title={item.fullName}>{item.fullName}</span>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{item.count}</span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden p-4">
         <CardHeader>
           <CardTitle>Recent tickets</CardTitle>
         </CardHeader>

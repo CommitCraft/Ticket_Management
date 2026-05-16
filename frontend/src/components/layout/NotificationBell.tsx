@@ -7,8 +7,14 @@ import { cn } from '../../utils/cn';
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [lastFetch, setLastFetch] = useState<number>(0);
 
   const loadNotifications = async () => {
+    // Debounce: prevent requests within 5 seconds
+    const now = Date.now();
+    if (now - lastFetch < 5000) return;
+    setLastFetch(now);
+
     try {
       const notifications = await listNotifications();
       const count = notifications.filter((n: any) => !n.readAt).length;
@@ -20,10 +26,10 @@ export function NotificationBell() {
 
   useEffect(() => {
     void loadNotifications();
-    // Refresh notifications every 10 seconds
-    const interval = setInterval(() => loadNotifications(), 10000);
+    // Refresh notifications every 30 seconds (prevents 429 rate limit errors)
+    const interval = setInterval(() => loadNotifications(), 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [lastFetch]);
 
   return (
     <Link
