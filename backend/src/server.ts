@@ -4,8 +4,8 @@ import { app } from './app.js';
 
 async function bootstrap() {
   await connectDatabase();
-  app.listen(env.PORT, () => {
-    console.log(`API listening on port ${env.PORT}`);
+  app.listen(env.PORT, env.HOST, () => {
+    console.log(`API listening on ${env.HOST}:${env.PORT}`);
   });
 }
 

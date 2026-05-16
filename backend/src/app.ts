@@ -20,7 +20,12 @@ export const app = express();
 
 app.set('trust proxy', 1); // Trust first proxy (nginx, load balancer, etc.)
 app.use(helmet());
-app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
+if (env.ALLOW_ALL_ORIGINS) {
+  // Allow requests from any origin (reflect origin) — useful when binding to 0.0.0.0
+  app.use(cors({ origin: true, credentials: true }));
+} else {
+  app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
+}
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

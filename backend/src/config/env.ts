@@ -23,7 +23,10 @@ const envSchema = z.object({
   WHATSAPP_ID_INSTANCE: z.string().optional(),
   WHATSAPP_API_TOKEN_INSTANCE: z.string().optional(),
   WHATSAPP_GROUP_ID: z.string().optional(),
+  HOST: z.string().default('0.0.0.0'),
+  ALLOW_ALL_ORIGINS: z.coerce.boolean().optional().default(false),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development')
 });
 
 export const env = envSchema.parse(process.env);
+
