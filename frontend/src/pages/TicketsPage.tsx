@@ -202,11 +202,6 @@ export function TicketsPage() {
                           }`}>
                             {ticket.status.replace(/_/g, ' ')}
                           </Badge>
-                          {['assigned', 'in_progress'].includes(ticket.status) && getAssignedAgentName(ticket) ? (
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                              Assigned to: <span className="font-semibold text-slate-700 dark:text-slate-300">{getAssignedAgentName(ticket)}</span>
-                            </p>
-                          ) : null}
                         </div>
                       </TableCell>
                       <TableCell className="px-2.5 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400">
