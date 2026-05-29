@@ -36,3 +36,12 @@ export const replyTicketSchema = z.object({
 export const assignTicketSchema = z.object({
   assignedAgentId: z.string().min(1)
 });
+
+export const userApprovalSchema = z.object({
+  action: z.enum(['approve', 'reject']),
+  feedback: z.string().optional()
+}).superRefine((data, ctx) => {
+  if (data.action === 'reject' && (!data.feedback || data.feedback.trim().length === 0)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Feedback is required when rejecting' });
+  }
+});

@@ -3,6 +3,7 @@ export const TICKET_STATUSES = [
   'assigned',
   'in_progress',
   'pending',
+  'pending_user_approval',
   'escalated',
   'resolved',
   'closed',

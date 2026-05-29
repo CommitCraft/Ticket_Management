@@ -31,6 +31,11 @@ export async function changeTicketStatus(id: string, status: string) {
   return response.data;
 }
 
+export async function userApproval(ticketId: string, action: 'approve' | 'reject', feedback?: string) {
+  const response = await api.post<{ ticket: Ticket }>(`/api/tickets/${ticketId}/user-approval`, { action, feedback });
+  return response.data;
+}
+
 export async function listAssignableUsers(departmentId?: string) {
   const response = await api.get<{ items: Array<{ _id: string; fullName: string; email: string; roleKey: string }> }>('/api/tickets/assignable-users', {
     params: { departmentId }

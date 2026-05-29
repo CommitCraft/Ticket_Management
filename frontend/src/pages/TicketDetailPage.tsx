@@ -43,7 +43,7 @@ import { Button } from "../components/ui/button";
 import { Select } from "../components/ui/select";
 import { Textarea } from "../components/ui/textarea";
 import { api } from "../services/api";
-import { assignTicketToUser, changeTicketStatus, listAssignableUsers } from "../services/tickets";
+import { assignTicketToUser, changeTicketStatus, listAssignableUsers, userApproval } from "../services/tickets";
 import { useAppSelector } from "../hooks/useAppSelector";
 import type { TicketAttachment } from "../types/ticket";
 
@@ -682,15 +682,18 @@ export function TicketDetailPage() {
     );
   }
 
+  const creatorId = ticket.createdBy && typeof ticket.createdBy === 'object' ? ticket.createdBy._id : ticket.createdBy;
+  const isCurrentUserCreator = String(currentUser?._id) === String(creatorId);
+
   const conversationItems = [
     {
       id: ticket._id,
       createdAt: ticket.createdAt,
       message: ticket.description,
       attachments: ticket.attachments ?? [],
-      isOwn: false,
-      side: "left",
-      label: "Ticket Creator",
+      isOwn: isCurrentUserCreator,
+      side: isCurrentUserCreator ? "right" : "left",
+      label: isCurrentUserCreator ? "You" : "Ticket Creator",
     },
     ...replies.map((reply) => {
       const replyAuthor =
@@ -729,20 +732,58 @@ export function TicketDetailPage() {
         title={ticket.ticketId}
         description={ticket.subject}
         actions={
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate("/tickets")}>
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back
-            </Button>
-            {currentUser && currentUser.roleKey !== "user" && !isChatClosed && (
-              <Button
-                onClick={() =>
-                  changeTicketStatus(ticket._id, "resolved").then(loadTicket)
-                }
-              >
-                Mark resolved
-              </Button>
-            )}
-          </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => navigate("/tickets") }>
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                </Button>
+
+                {currentUser && currentUser.roleKey !== "user" && !isChatClosed && (
+                  <Button
+                    onClick={() => changeTicketStatus(ticket._id, "resolved").then(loadTicket)}
+                  >
+                    Mark resolved
+                  </Button>
+                )}
+
+                {/* User approval actions - visible to ticket creator when pending user approval */}
+                {ticket.status === "pending_user_approval" && isCurrentUserCreator && (
+                  <>
+                    <Button
+                      onClick={async () => {
+                        try {
+                          await userApproval(ticket._id, 'approve');
+                          toast.success('Ticket approved');
+                          await loadTicket();
+                        } catch (err: any) {
+                          toast.error(err?.response?.data?.message || 'Failed to approve ticket');
+                        }
+                      }}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={async () => {
+                        const feedback = window.prompt('Please provide a reason for rejecting the resolution');
+                        if (feedback === null) return; // cancelled
+                        if (String(feedback).trim().length === 0) {
+                          toast.error('Feedback is required to reject the resolution');
+                          return;
+                        }
+                        try {
+                          await userApproval(ticket._id, 'reject', feedback);
+                          toast.success('Ticket rejected and returned to pending');
+                          await loadTicket();
+                        } catch (err: any) {
+                          toast.error(err?.response?.data?.message || 'Failed to reject ticket');
+                        }
+                      }}
+                    >
+                      Reject
+                    </Button>
+                  </>
+                )}
+              </div>
         }
       />
       <div className="lg:hidden">

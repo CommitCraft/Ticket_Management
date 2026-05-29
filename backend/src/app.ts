@@ -30,7 +30,11 @@ app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan('dev'));
-app.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 200 }));
+// Rate limiting: more generous in development, stricter in production
+const rateLimitConfig = env.NODE_ENV === 'development' 
+  ? { windowMs: 15 * 60 * 1000, limit: 10000 } // 10,000 requests per 15 minutes for development
+  : { windowMs: 15 * 60 * 1000, limit: 200 };   // 200 requests per 15 minutes for production
+app.use(rateLimit(rateLimitConfig));
 
 // Serve uploaded files with proper caching headers
 app.use('/uploads', express.static('uploads', {

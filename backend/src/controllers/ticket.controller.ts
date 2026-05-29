@@ -132,13 +132,35 @@ export const updateTicket = asyncHandler(async (req: Request, res: Response) => 
   const previousStatus = ticket.status;
   Object.assign(ticket, req.body);
   ticket.lastActivityAt = new Date();
-  if (req.body.status && ['resolved', 'closed'].includes(req.body.status) && previousStatus !== req.body.status) {
+
+  // If engineer/agent marks resolved, move to pending user approval instead of closing immediately
+  if (req.body.status === 'resolved' && previousStatus !== 'resolved') {
+    ticket.status = 'pending_user_approval';
+    ticket.timeline.push({ action: 'marked_resolved_pending_approval', note: 'Marked resolved and awaiting user approval', by: req.user?._id.toString(), metadata: {} });
+    await ticket.save();
+
+    await createNotification({
+      userId: String(ticket.createdBy),
+      type: 'ticket_pending_user_approval',
+      title: `Ticket ${ticket.ticketId} resolved — pending your approval`,
+      body: `Ticket has been marked resolved. Please review and approve or reject.`,
+      ticketId: ticket._id.toString()
+    });
+
+    await logAudit({ actorId: req.user?._id.toString(), action: 'mark_resolved_pending_user_approval', entityType: 'Ticket', entityId: ticket._id.toString(), after: ticket, ip: req.ip, userAgent: req.get('user-agent') ?? '' });
+    res.json({ ticket });
+    return;
+  }
+
+  // Closed state handling
+  if (req.body.status === 'closed' && previousStatus !== 'closed') {
     ticket.closedAt = new Date();
   }
+
   ticket.timeline.push({ action: 'updated', note: 'Ticket updated', by: req.user?._id.toString(), metadata: req.body });
   await ticket.save();
 
-  if (req.body.status && ['resolved', 'closed'].includes(req.body.status) && previousStatus !== req.body.status) {
+  if (req.body.status === 'closed' && previousStatus !== 'closed') {
     await createNotification({
       userId: String(ticket.createdBy),
       type: 'ticket_resolved',
@@ -197,8 +219,27 @@ export const changeTicketStatus = asyncHandler(async (req: Request, res: Respons
   }
 
   const previousStatus = ticket.status;
+  // If engineer marks resolved, set to pending user approval
+  if (req.body.status === 'resolved') {
+    ticket.status = 'pending_user_approval';
+    ticket.timeline.push({ action: 'marked_resolved_pending_approval', note: 'Marked resolved and awaiting user approval', by: req.user?._id.toString(), metadata: {} });
+    await ticket.save();
+
+    await createNotification({
+      userId: String(ticket.createdBy),
+      type: 'ticket_pending_user_approval',
+      title: `Ticket ${ticket.ticketId} resolved — pending your approval`,
+      body: `Ticket has been marked resolved. Please review and approve or reject.`,
+      ticketId: ticket._id.toString()
+    });
+
+    await logAudit({ actorId: req.user?._id.toString(), action: 'mark_resolved_pending_user_approval', entityType: 'Ticket', entityId: ticket._id.toString(), after: ticket, ip: req.ip, userAgent: req.get('user-agent') ?? '' });
+    res.json({ ticket });
+    return;
+  }
+
   ticket.status = req.body.status;
-  if (req.body.status === 'resolved' || req.body.status === 'closed') {
+  if (req.body.status === 'closed') {
     ticket.closedAt = new Date();
     // Notify ticket creator
     await createNotification({ userId: String(ticket.createdBy), type: 'ticket_resolved', title: `Ticket ${ticket.ticketId} updated`, body: `Status changed to ${req.body.status}`, ticketId: ticket._id.toString() });
@@ -236,6 +277,76 @@ export const changeTicketStatus = asyncHandler(async (req: Request, res: Respons
     }
   }
   res.json({ ticket });
+});
+
+export const userApproval = asyncHandler(async (req: Request, res: Response) => {
+  const ticket = await Ticket.findById(req.params.id);
+  if (!ticket || ticket.isDeleted) {
+    throw new ApiError(404, 'Ticket not found');
+  }
+
+  // Only ticket creator can approve/reject
+  const creatorId = ticket.createdBy && (ticket.createdBy as any)._id ? String((ticket.createdBy as any)._id) : String(ticket.createdBy);
+  if (String(req.user?._id) !== creatorId) {
+    throw new ApiError(403, 'Only the ticket creator can approve or reject resolution');
+  }
+
+  const { action, feedback } = req.body as { action: 'approve' | 'reject'; feedback?: string };
+
+  if (action === 'approve') {
+    ticket.status = 'closed';
+    ticket.closedAt = new Date();
+    ticket.timeline.push({ action: 'user_approved', note: feedback ?? 'Approved by user', by: req.user?._id.toString(), metadata: { feedback } });
+    await ticket.save();
+
+    // Notify assigned agent
+    if (ticket.assignedAgentId) {
+      await createNotification({ userId: String(ticket.assignedAgentId), type: 'ticket_user_approved', title: `Ticket ${ticket.ticketId} approved by user`, body: feedback ?? 'Ticket approved', ticketId: ticket._id.toString() });
+    }
+
+    await logAudit({ actorId: req.user?._id.toString(), action: 'user_approved_ticket', entityType: 'Ticket', entityId: ticket._id.toString(), after: ticket, ip: req.ip, userAgent: req.get('user-agent') ?? '' });
+
+    void sendTicketWhatsAppAlert({
+      event: 'closed',
+      ticketId: ticket.ticketId,
+      companyName: ticket.companyName,
+      subject: ticket.subject,
+      occurredAt: ticket.closedAt ?? new Date(),
+      status: ticket.status,
+      priority: ticket.priority,
+      actorName: req.user?.fullName,
+      actorRole: req.user?.roleKey
+    }).catch((error) => {
+      console.error('WhatsApp alert failed for ticket user approval', error);
+    });
+
+    res.json({ ticket });
+    return;
+  }
+
+  // reject
+  if (action === 'reject') {
+    if (!feedback || String(feedback).trim().length === 0) {
+      throw new ApiError(400, 'Feedback is required when rejecting a resolution');
+    }
+
+    ticket.status = 'pending';
+    ticket.timeline.push({ action: 'user_rejected', note: feedback, by: req.user?._id.toString(), metadata: { feedback } });
+    ticket.lastActivityAt = new Date();
+    await ticket.save();
+
+    // Notify assigned agent so it appears on their dashboard
+    if (ticket.assignedAgentId) {
+      await createNotification({ userId: String(ticket.assignedAgentId), type: 'ticket_rejected_by_user', title: `Ticket ${ticket.ticketId} rejected by user`, body: feedback, ticketId: ticket._id.toString() });
+    }
+
+    await logAudit({ actorId: req.user?._id.toString(), action: 'user_rejected_ticket', entityType: 'Ticket', entityId: ticket._id.toString(), after: ticket, ip: req.ip, userAgent: req.get('user-agent') ?? '' });
+
+    res.json({ ticket });
+    return;
+  }
+
+  throw new ApiError(400, 'Invalid action');
 });
 
 export const replyToTicket = asyncHandler(async (req: Request, res: Response) => {
