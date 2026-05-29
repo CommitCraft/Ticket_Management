@@ -6,6 +6,9 @@ import { ApiError } from '../utils/api-error.js';
 
 export const listNotifications = asyncHandler(async (req: Request, res: Response) => {
   const notifications = await Notification.find({ userId: req.user?._id }).sort({ createdAt: -1 });
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.json({ items: notifications });
 });
 

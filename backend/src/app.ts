@@ -19,6 +19,7 @@ import { env } from './config/env.js';
 export const app = express();
 
 app.set('trust proxy', 1); // Trust first proxy (nginx, load balancer, etc.)
+app.disable('etag');
 app.use(helmet());
 if (env.ALLOW_ALL_ORIGINS) {
   // Allow requests from any origin (reflect origin) — useful when binding to 0.0.0.0
@@ -35,6 +36,14 @@ const rateLimitConfig = env.NODE_ENV === 'development'
   ? { windowMs: 15 * 60 * 1000, limit: 10000 } // 10,000 requests per 15 minutes for development
   : { windowMs: 15 * 60 * 1000, limit: 200 };   // 200 requests per 15 minutes for production
 app.use(rateLimit(rateLimitConfig));
+
+// Prevent browser/proxy caching for all API responses so GET requests do not revalidate as 304s.
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
 
 // Serve uploaded files with proper caching headers
 app.use('/uploads', express.static('uploads', {

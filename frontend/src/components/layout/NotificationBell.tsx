@@ -1,19 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Bell } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { listNotifications } from '../../services/notifications';
 import { cn } from '../../utils/cn';
 
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [lastFetch, setLastFetch] = useState<number>(0);
+  const lastFetchRef = useRef<number>(0);
+  const location = useLocation();
+  const isNotificationsPage = location.pathname === '/notifications';
 
   const loadNotifications = async () => {
-    // Debounce: prevent requests within 5 seconds
     const now = Date.now();
-    if (now - lastFetch < 5000) return;
-    setLastFetch(now);
+    if (now - lastFetchRef.current < 5000) return;
+    lastFetchRef.current = now;
 
     try {
       const notifications = await listNotifications();
@@ -25,11 +25,15 @@ export function NotificationBell() {
   };
 
   useEffect(() => {
+    if (isNotificationsPage) return;
+
     void loadNotifications();
-    // Refresh notifications every 30 seconds (prevents 429 rate limit errors)
-    const interval = setInterval(() => loadNotifications(), 30000);
+    const interval = window.setInterval(() => {
+      void loadNotifications();
+    }, 30000);
+
     return () => clearInterval(interval);
-  }, [lastFetch]);
+  }, [isNotificationsPage]);
 
   return (
     <Link
