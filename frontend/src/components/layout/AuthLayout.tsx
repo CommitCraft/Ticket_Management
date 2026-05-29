@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import AplosLogo from './AplosLogo';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -21,8 +22,8 @@ export function AuthLayout({ children, eyebrow, title, description, icon = '🚀
 
               <div className="relative z-10 flex w-full max-w-md flex-col items-center text-center lg:items-start lg:text-left">
                 <div className="mb-8 flex flex-col items-center gap-3 lg:items-start">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-lg shadow-blue-950/20 ring-4 ring-white/20 sm:h-20 sm:w-20">
-                    <span className="text-3xl">{icon}</span>
+                  <div className="rounded-3xl border border-white/20 bg-white/10 px-4 py-3 shadow-lg shadow-blue-950/20 backdrop-blur-sm">
+                    <AplosLogo size="lg" taglineColor="rgba(255,255,255,0.9)" />
                   </div>
                   <div>
                     <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-100/90">Helpdesk Pro</p>

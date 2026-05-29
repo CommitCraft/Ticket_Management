@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { cn } from '../../utils/cn';
 import type { RoleKey } from '../../types/auth';
+import AplosLogo from './AplosLogo';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['super_admin', 'admin', 'support_agent'] as RoleKey[] },
@@ -39,8 +40,12 @@ export function Sidebar({
     >
       <div className={cn('mb-8 flex items-start justify-between gap-3', isCompact && 'flex-col items-center')}>
         <div className={cn(isCompact && 'text-center')}>
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-blue-500">{isCompact ? 'EH' : 'Enterprise Helpdesk'}</p>
-          {!isCompact ? <h2 className="mt-2 text-2xl font-bold">Ticket Ops</h2> : null}
+          <AplosLogo
+            size={isCompact ? 'sm' : 'md'}
+            showTagline={!isCompact}
+            taglineColor={isCompact ? '#64748b' : '#475569'}
+            align={isCompact ? 'center' : 'start'}
+          />
         </div>
         {onToggleCollapse ? (
           <Button
