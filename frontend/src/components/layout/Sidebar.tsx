@@ -1,5 +1,6 @@
-import { Archive, BarChart3, Boxes, FileText, LayoutDashboard, Lock, Shield, Ticket, Users } from 'lucide-react';
+import { Archive, BarChart3, Boxes, ChevronRight, FileText, LayoutDashboard, Lock, PanelLeftClose, Shield, Ticket, Users } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { Button } from '../ui/button';
 import { cn } from '../../utils/cn';
 import type { RoleKey } from '../../types/auth';
 
@@ -15,25 +16,61 @@ const navItems = [
   { to: '/audit-logs', label: 'Audit Logs', icon: Archive, roles: ['super_admin'] as RoleKey[] }
 ];
 
-export function Sidebar({ role, mobile = false }: { role?: RoleKey; mobile?: boolean }) {
+export function Sidebar({
+  role,
+  mobile = false,
+  collapsed = false,
+  onToggleCollapse
+}: {
+  role?: RoleKey;
+  mobile?: boolean;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
+}) {
+  const isCompact = collapsed && !mobile;
+
   return (
-    <aside className={cn('w-72 shrink-0 border-r border-white/60 bg-white/70 p-5 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/70', mobile ? 'block lg:hidden' : 'hidden lg:block')}>
-      <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-blue-500">Enterprise Helpdesk</p>
-        <h2 className="mt-2 text-2xl font-bold">Ticket Ops</h2>
+    <aside
+      className={cn(
+        'shrink-0 border-r border-white/60 bg-white/70 backdrop-blur-xl transition-all duration-300 dark:border-slate-800 dark:bg-slate-950/70',
+        isCompact ? 'w-20 px-3 py-5' : 'w-72 p-5',
+        mobile ? 'block lg:hidden' : 'hidden lg:block'
+      )}
+    >
+      <div className={cn('mb-8 flex items-start justify-between gap-3', isCompact && 'flex-col items-center')}>
+        <div className={cn(isCompact && 'text-center')}>
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-blue-500">{isCompact ? 'EH' : 'Enterprise Helpdesk'}</p>
+          {!isCompact ? <h2 className="mt-2 text-2xl font-bold">Ticket Ops</h2> : null}
+        </div>
+        {onToggleCollapse ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onToggleCollapse}
+            className="hidden lg:inline-flex"
+            aria-label={isCompact ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={isCompact ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {isCompact ? <ChevronRight className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          </Button>
+        ) : null}
       </div>
-      <nav className="space-y-1">
+      <nav className={cn('space-y-1', isCompact && 'space-y-2')}>
         {navItems.filter((item) => !item.roles || (role && item.roles.includes(role))).map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
+            title={isCompact ? item.label : undefined}
+            aria-label={item.label}
             className={({ isActive }) => cn(
-              'flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition',
+              'flex items-center rounded-xl py-2 text-sm font-medium transition',
+              isCompact ? 'justify-center px-2' : 'gap-3 px-3',
               isActive ? 'bg-slate-900 text-white dark:bg-blue-500' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
             )}
           >
             <item.icon className="h-4 w-4" />
-            {item.label}
+            {!isCompact ? <span>{item.label}</span> : null}
           </NavLink>
         ))}
       </nav>
