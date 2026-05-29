@@ -17,15 +17,15 @@ export function AppShell() {
   }, [sidebarCollapsed]);
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar
         role={role}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed((value) => !value)}
       />
-      <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Navbar onMenuClick={() => setMobileMenuOpen((value) => !value)} />
-        <main className="flex-1 min-w-0 px-4 py-6 md:px-6">
+        <main className="min-h-0 flex-1 min-w-0 overflow-y-auto px-4 py-6 md:px-6">
           <Outlet />
         </main>
       </div>

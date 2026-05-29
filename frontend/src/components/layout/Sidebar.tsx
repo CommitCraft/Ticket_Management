@@ -33,7 +33,7 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        'shrink-0 border-r border-white/60 bg-white/70 backdrop-blur-xl transition-all duration-300 dark:border-slate-800 dark:bg-slate-950/70',
+        'sticky top-0 h-screen shrink-0 border-r border-white/60 bg-white/70 backdrop-blur-xl transition-all duration-300 dark:border-slate-800 dark:bg-slate-950/70',
         isCompact ? 'w-20 px-3 py-5' : 'w-72 p-5',
         mobile ? 'block lg:hidden' : 'hidden lg:block'
       )}
