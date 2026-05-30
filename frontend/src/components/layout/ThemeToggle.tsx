@@ -9,9 +9,14 @@ export function ThemeToggle() {
   const dispatch = useAppDispatch();
 
   return (
-    <Button variant="outline" className="h-10 px-3" onClick={() => dispatch(toggleDarkMode())}>
-      {darkMode ? <SunMedium className="mr-2 h-4 w-4" /> : <MoonStar className="mr-2 h-4 w-4" />}
-      {darkMode ? 'Light' : 'Dark'}
+    <Button
+      variant="outline"
+      className="h-10 w-10 p-0"
+      onClick={() => dispatch(toggleDarkMode())}
+      aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+    >
+      {darkMode ? <SunMedium className="h-4 w-4" /> : <MoonStar className="h-4 w-4" />}
     </Button>
   );
 }

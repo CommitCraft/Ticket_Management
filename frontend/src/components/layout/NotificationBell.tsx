@@ -39,9 +39,11 @@ export function NotificationBell() {
     <Link
       to="/notifications"
       className={cn(
-        'relative inline-flex items-center justify-center h-10 w-10 rounded-lg transition',
-        'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+        'relative inline-flex h-10 w-10 items-center justify-center rounded-lg border transition',
+        'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
       )}
+      aria-label="Notifications"
+      title="Notifications"
     >
       <Bell className="h-5 w-5" />
       {unreadCount > 0 && (

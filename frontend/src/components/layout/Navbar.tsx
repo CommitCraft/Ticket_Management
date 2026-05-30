@@ -1,26 +1,14 @@
-import { Menu, LogOut, PlusCircle, Search } from 'lucide-react';
+import { Menu, PlusCircle, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { ThemeToggle } from './ThemeToggle';
 import { NotificationBell } from './NotificationBell';
-import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
-import { clearCredentials } from '../../store/authSlice';
-import { logoutRequest } from '../../services/auth';
-import { toast } from 'sonner';
 
 export function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const user = useAppSelector((state) => state.auth.user);
-  const dispatch = useAppDispatch();
   const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logoutRequest();
-    dispatch(clearCredentials());
-    toast.success('Logged out');
-    navigate('/login');
-  };
 
   return (
     <header className="sticky top-0 z-20 border-b border-white/60 bg-white/75 px-4 py-3 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/70 md:px-6">
@@ -34,7 +22,6 @@ export function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
           {user ? <Button variant="outline" onClick={() => navigate('/tickets/new')}><PlusCircle className="mr-2 h-4 w-4" /> New Ticket</Button> : null}
           <NotificationBell />
           <ThemeToggle />
-          <Button variant="ghost" onClick={handleLogout}><LogOut className="mr-2 h-4 w-4" /> Logout</Button>
         </div>
       </div>
     </header>

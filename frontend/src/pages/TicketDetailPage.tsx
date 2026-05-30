@@ -30,17 +30,17 @@ import {
   User,
   UserCheck,
 } from "lucide-react";
-import { PageHeader } from "../components/layout/PageHeader";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
 import { Select } from "../components/ui/select";
 import { Textarea } from "../components/ui/textarea";
+import { PageHeader } from "../components/layout/PageHeader";
 import { api } from "../services/api";
 import { assignTicketToUser, changeTicketStatus, listAssignableUsers, userApproval } from "../services/tickets";
 import { useAppSelector } from "../hooks/useAppSelector";
@@ -836,6 +836,140 @@ export function TicketDetailPage() {
     currentUser?.permissions?.includes("ticket:assign") ||
     currentUser?.roleKey === "super_admin";
 
+  const detailsPanelContent = (
+    <div className="space-y-5 text-sm">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {renderDetailRow(
+          <Info className="h-4 w-4" />,
+          "Company name",
+          ticket.companyName,
+        )}
+        {renderDetailRow(
+          <Info className="h-4 w-4" />,
+          "Line / Station",
+          ticket.lineOrStation,
+        )}
+        {renderDetailRow(<Info className="h-4 w-4" />, "IP", ticket.ip)}
+        {renderDetailRow(
+          <Info className="h-4 w-4" />,
+          "Current operator phone",
+          ticket.currentOperatorPhoneNumber,
+        )}
+        {renderDetailRow(
+          <Info className="h-4 w-4" />,
+          "Priority",
+          (<Badge className="mt-1">{ticket.priority}</Badge>) as any,
+        )}
+        {renderDetailRow(
+          <Info className="h-4 w-4" />,
+          "Status",
+          (<Badge className="mt-1">{ticket.status}</Badge>) as any,
+        )}
+        {renderDetailRow(
+          <Tag className="h-4 w-4" />,
+          "Category",
+          ticket.category || "Not set",
+        )}
+        {renderDetailRow(
+          <Paperclip className="h-4 w-4" />,
+          "Department",
+          ticket.departmentId?.name || "Not set",
+        )}
+        {renderDetailRow(
+          <User className="h-4 w-4" />,
+          "Created by",
+          ticket.createdBy?.fullName || "Unknown",
+        )}
+        {currentUser?.roleKey !== "user"
+          ? renderDetailRow(
+              <UserCheck className="h-4 w-4" />,
+              "Assigned to",
+              ticket.assignedAgentId?.fullName || "Unassigned",
+            )
+          : null}
+        {renderDetailRow(
+          <CalendarDays className="h-4 w-4" />,
+          "Created",
+          new Date(ticket.createdAt).toLocaleString(),
+        )}
+        {renderDetailRow(
+          <Clock3 className="h-4 w-4" />,
+          "Updated",
+          new Date(ticket.updatedAt).toLocaleString(),
+        )}
+        {currentUser?.roleKey !== "user"
+          ? renderDetailRow(
+              <TimerReset className="h-4 w-4" />,
+              "SLA due",
+              ticket.slaDueAt
+                ? new Date(ticket.slaDueAt).toLocaleString()
+                : "Not set",
+            )
+          : null}
+        {renderDetailRow(
+          <MessageSquare className="h-4 w-4" />,
+          "Description",
+          ticket.description,
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {ticket.tags?.length ? (
+          ticket.tags.map((tagValue: string) => (
+            <Badge key={tagValue} variant="outline">
+              {tagValue}
+            </Badge>
+          ))
+        ) : (
+          <span className="text-slate-500 dark:text-slate-400">No tags</span>
+        )}
+      </div>
+
+      {currentUser?.roleKey !== "user" ? (
+        <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                Assign ticket
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Reassign this ticket to a support user
+              </p>
+            </div>
+            <Badge variant="outline">{canAssignTickets ? "Enabled" : "Locked"}</Badge>
+          </div>
+          {canAssignTickets ? (
+            <div className="space-y-3">
+              <Select
+                value={selectedAssigneeId}
+                onChange={(event) => setSelectedAssigneeId((event.target as HTMLSelectElement).value)}
+              >
+                <option value="">Select user</option>
+                {assignableUsers.map((user) => (
+                  <option key={user._id} value={user._id}>
+                    {user.fullName} ({user.email})
+                  </option>
+                ))}
+              </Select>
+              <Button
+                type="button"
+                onClick={handleAssignTicket}
+                disabled={isAssigning || !selectedAssigneeId}
+                className="w-full"
+              >
+                {isAssigning ? "Assigning..." : "Assign ticket"}
+              </Button>
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              You do not have permission to assign this ticket.
+            </p>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/** Regular users should see only the fields relevant to them. */}
@@ -900,10 +1034,10 @@ export function TicketDetailPage() {
       <div className="lg:hidden">
         <Button
           variant="outline"
-          onClick={() => setShowDetailsOnMobile((current) => !current)}
+          onClick={() => setShowDetailsOnMobile(true)}
           className="w-full"
         >
-          {showDetailsOnMobile ? "Hide details" : "Show details"}
+          Show details
         </Button>
       </div>
       <div className="grid gap-4 lg:grid-cols-[1.4fr_0.6fr]">
@@ -1174,7 +1308,11 @@ export function TicketDetailPage() {
                         <Button type="button" variant="outline" onClick={closeCamera}>
                           Cancel
                         </Button>
-                        <Button type="button" onClick={captureCameraPhoto} disabled={!isCameraReady || isCapturingPhoto}>
+                        <Button
+                          type="button"
+                          onClick={captureCameraPhoto}
+                          disabled={!isCameraReady || isCapturingPhoto}
+                        >
                           {isCapturingPhoto ? "Sending..." : "Capture & Send"}
                         </Button>
                       </div>
@@ -1182,127 +1320,31 @@ export function TicketDetailPage() {
                   </div>
                 </div>
               </div>
-            ) : null}
-          </CardContent>
-        </Card>
-        <Card className={showDetailsOnMobile ? "lg:block" : "hidden lg:block"}>
-          <CardHeader>
-            <CardTitle>Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5 text-sm">
-            <div className="grid gap-3 sm:grid-cols-2">
-              {renderDetailRow(
-                <Info className="h-4 w-4" />,
-                "Company name",
-                ticket.companyName,
-              )}
-              {renderDetailRow(
-                <Info className="h-4 w-4" />,
-                "Line / Station",
-                ticket.lineOrStation,
-              )}
-              {renderDetailRow(<Info className="h-4 w-4" />, "IP", ticket.ip)}
-              {renderDetailRow(
-                <Info className="h-4 w-4" />,
-                "Current operator phone",
-                ticket.currentOperatorPhoneNumber,
-              )}
-              {renderDetailRow(
-                <Info className="h-4 w-4" />,
-                "Priority",
-                (<Badge className="mt-1">{ticket.priority}</Badge>) as any,
-              )}
-              {renderDetailRow(
-                <Info className="h-4 w-4" />,
-                "Status",
-                (<Badge className="mt-1">{ticket.status}</Badge>) as any,
-              )}
-              {renderDetailRow(
-                <Tag className="h-4 w-4" />,
-                "Category",
-                ticket.category || "Not set",
-              )}
-              {renderDetailRow(
-                <Paperclip className="h-4 w-4" />,
-                "Department",
-                ticket.departmentId?.name || "Not set",
-              )}
-              {renderDetailRow(
-                <User className="h-4 w-4" />,
-                "Created by",
-                ticket.createdBy?.fullName || "Unknown",
-              )}
-              {currentUser?.roleKey !== "user"
-                ? renderDetailRow(
-                    <UserCheck className="h-4 w-4" />,
-                    "Assigned to",
-                    ticket.assignedAgentId?.fullName || "Unassigned",
-                  )
-                : null}
-              {renderDetailRow(
-                <CalendarDays className="h-4 w-4" />,
-                "Created",
-                new Date(ticket.createdAt).toLocaleString(),
-              )}
-              {renderDetailRow(
-                <Clock3 className="h-4 w-4" />,
-                "Updated",
-                new Date(ticket.updatedAt).toLocaleString(),
-              )}
-              {currentUser?.roleKey !== "user"
-                ? renderDetailRow(
-                    <TimerReset className="h-4 w-4" />,
-                    "SLA due",
-                    ticket.slaDueAt
-                      ? new Date(ticket.slaDueAt).toLocaleString()
-                      : "Not set",
-                  )
-                : null}
-              {currentUser?.roleKey !== "user"
-                ? renderDetailRow(
-                    <MessageSquare className="h-4 w-4" />,
-                    "Replies",
-                    replies.length,
-                  )
-                : null}
-              {currentUser?.roleKey !== "user"
-                ? renderDetailRow(
-                    <TimerReset className="h-4 w-4" />,
-                    "Reopened",
-                    `${ticket.reopenedCount ?? 0} times`,
-                  )
-                : null}
-            </div>
 
-            {canAssignTickets ? (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900/40">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Ticket Assignment
-                </p>
-                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                  <Select
-                    value={selectedAssigneeId}
-                    onChange={(event) => setSelectedAssigneeId(event.target.value)}
-                    disabled={isAssigning || assignableUsers.length === 0}
-                  >
-                    <option value="">Select user</option>
-                    {assignableUsers.map((user) => (
-                      <option key={user._id} value={user._id}>
-                        {user.fullName} ({user.roleKey})
-                      </option>
-                    ))}
-                  </Select>
-                  <Button
-                    type="button"
-                    onClick={handleAssignTicket}
-                    disabled={isAssigning || !selectedAssigneeId}
-                  >
-                    {isAssigning ? "Assigning..." : "Assign"}
-                  </Button>
+            ) : null}
+
+            {showDetailsOnMobile ? (
+              <div
+                className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm lg:hidden"
+                onClick={() => setShowDetailsOnMobile(false)}
+              >
+                <div
+                  className="w-full max-h-[88vh] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">Details</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Ticket information and assignment</p>
+                    </div>
+                    <Button type="button" variant="outline" onClick={() => setShowDetailsOnMobile(false)}>
+                      Close
+                    </Button>
+                  </div>
+                  <div className="max-h-[calc(88vh-64px)] overflow-y-auto p-4">
+                    {detailsPanelContent}
+                  </div>
                 </div>
-                {assignableUsers.length === 0 ? (
-                  <p className="mt-2 text-xs text-slate-500">No assignable users found for this department.</p>
-                ) : null}
               </div>
             ) : null}
 

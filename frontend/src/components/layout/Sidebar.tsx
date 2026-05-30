@@ -1,4 +1,4 @@
-import { Archive, BarChart3, Boxes, ChevronRight, FileText, LayoutDashboard, Lock, PanelLeftClose, Shield, Ticket, Users } from 'lucide-react';
+import { Archive, BarChart3, Boxes, ChevronRight, FileText, LayoutDashboard, Lock, LogOut, PanelLeftClose, Shield, Ticket, Users } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { cn } from '../../utils/cn';
@@ -21,12 +21,14 @@ export function Sidebar({
   role,
   mobile = false,
   collapsed = false,
-  onToggleCollapse
+  onToggleCollapse,
+  onLogout
 }: {
   role?: RoleKey;
   mobile?: boolean;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  onLogout?: () => void;
 }) {
   const isCompact = collapsed && !mobile;
 
@@ -79,6 +81,22 @@ export function Sidebar({
           </NavLink>
         ))}
       </nav>
+
+      {onLogout ? (
+        <div className={cn('mt-auto pt-6', isCompact && 'pt-4')}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onLogout}
+            className={cn('w-full justify-start gap-2 text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-300 dark:hover:bg-red-950/40', isCompact && 'justify-center px-2')}
+            aria-label="Logout"
+            title="Logout"
+          >
+            <LogOut className="h-4 w-4" />
+            {!isCompact ? <span>Logout</span> : null}
+          </Button>
+        </div>
+      ) : null}
     </aside>
   );
 }
