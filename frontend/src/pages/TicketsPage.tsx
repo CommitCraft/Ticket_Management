@@ -118,7 +118,7 @@ export function TicketsPage() {
       <PageHeader
         title="Tickets"
         description={currentUser?.roleKey === 'user' ? 'Your tickets' : 'Search, filter, and manage the full ticket queue.'}
-        actions={<Link className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 dark:bg-blue-500 dark:hover:bg-blue-400" to="/tickets/new">Create Ticket</Link>}
+        // actions={<Link className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 dark:bg-blue-500 dark:hover:bg-blue-400" to="/tickets/new">Create Ticket</Link>}
       />
 
       {currentUser?.roleKey !== 'user' ? (
