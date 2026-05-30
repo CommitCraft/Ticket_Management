@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Button } from '../components/ui/button';
@@ -12,6 +11,7 @@ import { assignTicketToUser, listAssignableUsers, listTickets } from '../service
 import { Badge } from '../components/ui/badge';
 import { EmptyState } from '../components/layout/EmptyState';
 import { useAppSelector } from '../hooks/useAppSelector';
+import { formatDateTime } from '../utils/date';
 
 export function TicketsPage() {
   const currentUser = useAppSelector((state) => state.auth.user);
@@ -106,11 +106,6 @@ export function TicketsPage() {
     }
 
     return null;
-  };
-
-  const formatDateTime = (value: string) => {
-    const date = new Date(value);
-    return `${format(date, 'dd MMM yyyy')} • ${format(date, 'hh:mm a')}`;
   };
 
   return (
@@ -321,6 +316,7 @@ export function TicketsPage() {
           </div>
         </Card>
       )}
+
     </div>
   );
 }

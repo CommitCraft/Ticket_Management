@@ -16,6 +16,7 @@ import { PermissionsPage } from '../pages/PermissionsPage';
 import { DepartmentsPage } from '../pages/DepartmentsPage';
 import { ReportsPage } from '../pages/ReportsPage';
 import { ProfilePage } from '../pages/ProfilePage';
+import { AboutCompanyPage } from '../pages/AboutCompanyPage';
 import { NotificationsPage } from '../pages/NotificationsPage';
 import { AuditLogsPage } from '../pages/AuditLogsPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
@@ -37,6 +38,7 @@ export function AppRoutes() {
         <Route path="/tickets/new" element={<TicketCreatePage />} />
         <Route path="/tickets/:id" element={<TicketDetailPage />} />
         <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/about-company" element={<AboutCompanyPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/audit-logs" element={<RoleGate roles={['super_admin']}><AuditLogsPage /></RoleGate>} />

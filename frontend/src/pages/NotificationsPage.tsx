@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
 import { Bell, CheckCheck, Trash2, AlertCircle, CheckCircle, MessageSquare, Clock, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -10,6 +9,7 @@ import { Select } from '../components/ui/select';
 import { listNotifications, markNotificationRead, deleteNotification, markAllNotificationsRead, deleteAllNotifications } from '../services/notifications';
 import { EmptyState } from '../components/layout/EmptyState';
 import { toast } from 'sonner';
+import { formatDateTime } from '../utils/date';
 
 export function NotificationsPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -185,7 +185,7 @@ export function NotificationsPage() {
                     </div>
                     <p className="mt-1 break-words text-sm text-slate-600 dark:text-slate-300">{notification.body}</p>
                     <p className="mt-2 flex items-center gap-1 text-xs text-slate-500">
-                      <Clock className="h-3.5 w-3.5" /> {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                      <Clock className="h-3.5 w-3.5" /> {formatDateTime(notification.createdAt)}
                     </p>
                   </div>
                 </div>

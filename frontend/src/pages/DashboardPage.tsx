@@ -19,6 +19,7 @@ import { listTickets } from '../services/tickets';
 import { listDepartments } from '../services/users';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { Link } from 'react-router-dom';
+import { formatDateTime } from '../utils/date';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
@@ -211,7 +212,7 @@ export function DashboardPage() {
                       </Link>
                     </TableCell>
                     <TableCell className="text-sm text-slate-600 dark:text-slate-400 font-medium whitespace-nowrap">
-                      {new Date(ticket.createdAt).toLocaleDateString()}
+                      {formatDateTime(ticket.createdAt)}
                     </TableCell>
                     <TableCell className="text-slate-700 dark:text-slate-300">
                       <span className="line-clamp-1">{ticket.subject}</span>

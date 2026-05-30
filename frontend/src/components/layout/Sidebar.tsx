@@ -1,4 +1,4 @@
-import { Archive, BarChart3, Boxes, FileText, LayoutDashboard, Lock, LogOut, Shield, Ticket, Users } from 'lucide-react';
+import { Archive, BarChart3, Boxes, Building2, FileText, LayoutDashboard, Lock, LogOut, Shield, Ticket, Users } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { cn } from '../../utils/cn';
@@ -9,6 +9,7 @@ const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['super_admin', 'admin', 'support_agent'] as RoleKey[] },
   { to: '/tickets', label: 'Tickets', icon: Ticket },
   { to: '/reports', label: 'Reports', icon: BarChart3, roles: ['super_admin', 'admin', 'support_agent'] as RoleKey[] },
+  { to: '/about-company', label: 'About Company', icon: Building2 },
   { to: '/profile', label: 'Profile', icon: FileText },
   { to: '/users', label: 'Users', icon: Users, roles: ['super_admin', 'admin'] as RoleKey[] },
   { to: '/roles', label: 'Roles', icon: Shield, roles: ['super_admin'] as RoleKey[] },

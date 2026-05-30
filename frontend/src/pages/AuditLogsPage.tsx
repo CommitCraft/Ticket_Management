@@ -3,8 +3,8 @@ import { PageHeader } from '../components/layout/PageHeader';
 import { Card, CardContent } from '../components/ui/card';
 import { Table, TableHead, TableBody, TableRow, TableCell, TableHeaderCell } from '../components/ui/table';
 import { api } from '../services/api';
-import { format } from 'date-fns';
 import { X } from 'lucide-react';
+import { formatDateTime } from '../utils/date';
 
 interface AuditLog {
   _id: string;
@@ -121,9 +121,7 @@ export function AuditLogsPage() {
                         </code>
                       </TableCell>
                       <TableCell className="text-sm text-slate-600 dark:text-slate-400 font-medium">
-                        {format(new Date(log.createdAt), 'dd MMM yyyy')}
-                        <br />
-                        <span className="text-xs text-slate-500 dark:text-slate-500">{format(new Date(log.createdAt), 'hh:mm a')}</span>
+                        {formatDateTime(log.createdAt)}
                       </TableCell>
                       <TableCell className="text-center">
                         <button
@@ -207,10 +205,7 @@ export function AuditLogsPage() {
                   <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4">
                     <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">🕐 Timestamp</p>
                     <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">
-                      {format(new Date(selectedLog.createdAt), 'dd MMM yyyy')}
-                    </p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                      {format(new Date(selectedLog.createdAt), 'hh:mm:ss a')}
+                      {formatDateTime(selectedLog.createdAt, true)}
                     </p>
                   </div>
                   <div className="bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 rounded-lg p-4">

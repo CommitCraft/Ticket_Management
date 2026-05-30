@@ -45,6 +45,7 @@ import { api } from "../services/api";
 import { assignTicketToUser, changeTicketStatus, listAssignableUsers, userApproval } from "../services/tickets";
 import { useAppSelector } from "../hooks/useAppSelector";
 import type { TicketAttachment } from "../types/ticket";
+import { formatDateTime } from "../utils/date";
 
 const replySchema = z.object({
   message: z.string().optional(),
@@ -890,19 +891,19 @@ export function TicketDetailPage() {
         {renderDetailRow(
           <CalendarDays className="h-4 w-4" />,
           "Created",
-          new Date(ticket.createdAt).toLocaleString(),
+          formatDateTime(ticket.createdAt),
         )}
         {renderDetailRow(
           <Clock3 className="h-4 w-4" />,
           "Updated",
-          new Date(ticket.updatedAt).toLocaleString(),
+          formatDateTime(ticket.updatedAt),
         )}
         {currentUser?.roleKey !== "user"
           ? renderDetailRow(
               <TimerReset className="h-4 w-4" />,
               "SLA due",
               ticket.slaDueAt
-                ? new Date(ticket.slaDueAt).toLocaleString()
+                ? formatDateTime(ticket.slaDueAt)
                 : "Not set",
             )
           : null}

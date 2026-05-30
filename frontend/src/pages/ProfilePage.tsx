@@ -13,6 +13,7 @@ import { changePasswordRequest, updateProfileRequest } from '../services/auth';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { setUser } from '../store/authSlice';
+import { formatDateTime } from '../utils/date';
 
 const profileSchema = z.object({
   fullName: z.string().min(2, 'Name is required'),
@@ -160,7 +161,7 @@ export function ProfilePage() {
             </div>
             <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/60">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Last Login</p>
-              <p className="mt-1 text-base font-semibold text-slate-900 dark:text-white">{user?.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : '—'}</p>
+              <p className="mt-1 text-base font-semibold text-slate-900 dark:text-white">{user?.lastLoginAt ? formatDateTime(user.lastLoginAt) : '—'}</p>
             </div>
           </CardContent>
         </Card>
