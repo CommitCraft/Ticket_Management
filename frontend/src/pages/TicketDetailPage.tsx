@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
+import { format, isToday, isYesterday } from "date-fns";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -350,6 +350,17 @@ export function TicketDetailPage() {
     if (isToday(date)) return "Today";
     if (isYesterday(date)) return "Yesterday";
     return format(date, "EEEE, MMM d");
+  };
+
+  const getConversationTimestampLabel = (value: string) => {
+    const date = new Date(value);
+    if (isToday(date)) {
+      return format(date, "p");
+    }
+    if (isYesterday(date)) {
+      return `Yesterday at ${format(date, "p")}`;
+    }
+    return format(date, "MMM d, yyyy p");
   };
 
   const getFileKey = (file: File) =>
@@ -985,9 +996,7 @@ export function TicketDetailPage() {
                               {item.label}
                             </span>
                             <span>
-                              {formatDistanceToNow(new Date(item.createdAt), {
-                                addSuffix: true,
-                              })}
+                              {getConversationTimestampLabel(item.createdAt)}
                             </span>
                           </div>
                           <p
