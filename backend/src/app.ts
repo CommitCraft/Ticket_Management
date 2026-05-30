@@ -20,7 +20,9 @@ export const app = express();
 
 app.set('trust proxy', 1); // Trust first proxy (nginx, load balancer, etc.)
 app.disable('etag');
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
 if (env.ALLOW_ALL_ORIGINS) {
   // Allow requests from any origin (reflect origin) — useful when binding to 0.0.0.0
   app.use(cors({ origin: true, credentials: true }));
@@ -50,6 +52,7 @@ app.use('/uploads', express.static('uploads', {
   maxAge: '7d',  // Cache for 7 days
   etag: false,
   setHeaders: (res, path) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     // Add security headers for file downloads
     if (path.endsWith('.pdf') || path.endsWith('.doc') || path.endsWith('.docx')) {
       res.setHeader('Content-Disposition', 'inline');

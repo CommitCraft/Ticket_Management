@@ -22,7 +22,6 @@ import {
   Image as ImageIcon,
   Info,
   MessageSquare,
-  Mic,
   Paperclip,
   Send,
   Smile,
@@ -48,7 +47,7 @@ import { useAppSelector } from "../hooks/useAppSelector";
 import type { TicketAttachment } from "../types/ticket";
 
 const replySchema = z.object({
-  message: z.string().min(1, "Reply cannot be empty"),
+  message: z.string().optional(),
 });
 
 type ReplyValues = z.infer<typeof replySchema>;
@@ -64,15 +63,19 @@ export function TicketDetailPage() {
   const [showDetailsOnMobile, setShowDetailsOnMobile] = useState(false);
   const [showAttachmentsOnMobile, setShowAttachmentsOnMobile] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isCameraReady, setIsCameraReady] = useState(false);
+  const [isCapturingPhoto, setIsCapturingPhoto] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const [assignableUsers, setAssignableUsers] = useState<Array<{ _id: string; fullName: string; email: string; roleKey: string }>>([]);
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string>("");
   const [isAssigning, setIsAssigning] = useState(false);
   const conversationEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const speechRecognitionRef = useRef<any>(null);
+  const cameraVideoRef = useRef<HTMLVideoElement>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
+  const cameraCanvasRef = useRef<HTMLCanvasElement>(null);
   const lastReplyIdRef = useRef<string | null>(null);
   const repliesLengthRef = useRef(0);
   const quickEmojis = ["😀", "👍", "🙏", "✅", "🎯", "🚨", "📌", "💡"];
@@ -95,8 +98,18 @@ export function TicketDetailPage() {
     fileInputRef.current?.click();
   };
 
-  const openImagePicker = () => {
-    imageInputRef.current?.click();
+  const stopCameraStream = () => {
+    cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+    cameraStreamRef.current = null;
+    if (cameraVideoRef.current) {
+      cameraVideoRef.current.srcObject = null;
+    }
+    setIsCameraReady(false);
+  };
+
+  const openCamera = () => {
+    setCameraError(null);
+    setIsCameraOpen(true);
   };
 
   const appendEmoji = (emoji: string) => {
@@ -106,64 +119,128 @@ export function TicketDetailPage() {
     setShowEmojiPicker(false);
   };
 
-  const handleMicClick = () => {
-    if (isListening) {
-      speechRecognitionRef.current?.stop?.();
+  useEffect(() => {
+    if (!isCameraOpen) {
+      stopCameraStream();
       return;
     }
 
-    const SpeechRecognitionClass =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    let isMounted = true;
 
-    if (!SpeechRecognitionClass) {
-      toast.error("Voice input is not supported in this browser");
-      return;
-    }
+    const startCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false,
+        });
 
-    const recognition = new SpeechRecognitionClass();
-    recognition.lang = "en-US";
-    recognition.interimResults = true;
-    recognition.continuous = false;
+        if (!isMounted) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
 
-    recognition.onstart = () => {
-      setIsListening(true);
-      toast.info("Listening... speak now");
+        cameraStreamRef.current = stream;
+
+        if (cameraVideoRef.current) {
+          cameraVideoRef.current.srcObject = stream;
+          await cameraVideoRef.current.play();
+        }
+
+        setIsCameraReady(true);
+      } catch (error) {
+        console.error("Failed to open camera:", error);
+        if (isMounted) {
+          setCameraError("Camera access is blocked or unavailable on this device.");
+          setIsCameraReady(false);
+        }
+      }
     };
 
-    recognition.onresult = (event: any) => {
-      const transcript = Array.from(event.results)
-        .map((result: any) => result[0]?.transcript ?? "")
-        .join(" ")
-        .trim();
+    void startCamera();
 
-      if (!transcript) return;
-
-      const currentMessage = getValues("message") ?? "";
-      const nextMessage = `${currentMessage} ${transcript}`.trim();
-      setValue("message", nextMessage, { shouldDirty: true, shouldValidate: true });
+    return () => {
+      isMounted = false;
+      stopCameraStream();
     };
+  }, [isCameraOpen]);
 
-    recognition.onerror = () => {
-      setIsListening(false);
-      toast.error("Could not capture voice. Please try again.");
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    speechRecognitionRef.current = recognition;
-    recognition.start();
+  const closeCamera = () => {
+    setIsCameraOpen(false);
+    setCameraError(null);
+    setIsCapturingPhoto(false);
   };
 
-  useEffect(() => {
-    return () => {
-      speechRecognitionRef.current?.stop?.();
-    };
-  }, []);
+  const blobToFile = (blob: Blob, fileName: string) =>
+    new File([blob], fileName, { type: blob.type || "image/jpeg" });
 
-  const handleFileSelection = (event: ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(event.target.files ?? []);
+  const captureCameraPhoto = async () => {
+    if (!cameraVideoRef.current || !cameraCanvasRef.current || !cameraStreamRef.current) {
+      toast.error("Camera is not ready yet");
+      return;
+    }
+
+    const video = cameraVideoRef.current;
+    const canvas = cameraCanvasRef.current;
+    const width = video.videoWidth;
+    const height = video.videoHeight;
+
+    if (!width || !height) {
+      toast.error("Camera is not ready yet");
+      return;
+    }
+
+    setIsCapturingPhoto(true);
+
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      setIsCapturingPhoto(false);
+      toast.error("Could not capture image");
+      return;
+    }
+
+    context.drawImage(video, 0, 0, width, height);
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        setIsCapturingPhoto(false);
+        toast.error("Could not capture image");
+        return;
+      }
+
+      const message = (getValues("message") ?? "").trim();
+      const photoFile = blobToFile(blob, `camera-${Date.now()}.jpg`);
+      const filesToSend = [...pendingFiles.slice(0, 4), photoFile];
+
+      if (!message && filesToSend.length === 0) {
+        setIsCapturingPhoto(false);
+        toast.error("Reply cannot be empty");
+        return;
+      }
+
+      try {
+        const response = await postReply(message, filesToSend);
+        toast.success("Reply sent successfully");
+        reset();
+        setPendingFiles([]);
+        setReplies((current) => [...current, response.data.reply]);
+        repliesLengthRef.current += 1;
+        if (response.data.reply?._id) {
+          lastReplyIdRef.current = response.data.reply._id;
+        }
+        closeCamera();
+      } catch (error: any) {
+        console.error("Failed to send reply:", error);
+        toast.error(error?.response?.data?.message || "Failed to send reply");
+      } finally {
+        setIsCapturingPhoto(false);
+      }
+    }, "image/jpeg", 0.92);
+  };
+
+  const validateSelectedFiles = (selectedFiles: File[]) => {
     if (selectedFiles.length === 0) return;
 
     // Validate file sizes (max 10MB each for documents, 5MB for images)
@@ -179,6 +256,28 @@ export function TicketDetailPage() {
     }
 
     if (validFiles.length === 0) return;
+
+    return validFiles;
+  };
+
+  const postReply = async (message: string, files: File[]) => {
+    if (!id) {
+      throw new Error("Ticket ID not found");
+    }
+
+    const formData = new FormData();
+    formData.append("message", message);
+    files.forEach((file) => formData.append("attachments", file));
+
+    return api.post(`/api/tickets/${id}/replies`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  };
+
+  const handleFileSelection = (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    const validFiles = validateSelectedFiles(selectedFiles);
+    if (!validFiles || validFiles.length === 0) return;
 
     // Limit to 5 files total
     const currentCount = pendingFiles.length;
@@ -288,13 +387,13 @@ export function TicketDetailPage() {
             : "border-slate-200 dark:border-slate-700"
         }`}
       >
-        <p
+        {/* <p
           className={`text-[11px] font-semibold uppercase tracking-wide ${
             isOwnMessage ? "text-blue-100" : "text-slate-500"
           }`}
         >
           Attachments
-        </p>
+        </p> */}
         <div className="space-y-2">
           {attachments.map((attachment) => (
             <div key={attachment.url} className="space-y-2">
@@ -312,7 +411,7 @@ export function TicketDetailPage() {
                     className="block w-full text-left"
                     aria-label={`Preview ${attachment.name}`}
                   >
-                    <div
+                    {/* <div
                       className={`flex items-center justify-between border-b px-3 py-2 text-xs ${
                         isOwnMessage
                           ? "border-blue-300/60 text-blue-100"
@@ -342,7 +441,7 @@ export function TicketDetailPage() {
                       <span className="shrink-0">
                         {formatFileSize(attachment.size)}
                       </span>
-                    </div>
+                    </div> */}
                     <div
                       className={`p-2 ${
                         isOwnMessage
@@ -369,7 +468,7 @@ export function TicketDetailPage() {
                     >
                       Tap image to open in new tab
                     </span>
-                    <a
+                    {/* <a
                       href={resolveAttachmentUrl(attachment.url)}
                       download
                       target="_blank"
@@ -381,7 +480,7 @@ export function TicketDetailPage() {
                       }`}
                     >
                       <Download className="h-3.5 w-3.5" /> Download
-                    </a>
+                    </a> */}
                   </div>
                 </div>
               ) : (
@@ -594,14 +693,15 @@ export function TicketDetailPage() {
       toast.info("This ticket is closed. Chat is disabled.");
       return;
     }
-    try {
-      const formData = new FormData();
-      formData.append("message", values.message);
-      pendingFiles.forEach((file) => formData.append("attachments", file));
 
-      const response = await api.post(`/api/tickets/${id}/replies`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+    const message = (values.message ?? "").trim();
+    if (!message && pendingFiles.length === 0) {
+      toast.error("Reply cannot be empty");
+      return;
+    }
+
+    try {
+      const response = await postReply(message, pendingFiles);
       toast.success("Reply sent successfully");
       reset();
       setPendingFiles([]);
@@ -996,10 +1096,10 @@ export function TicketDetailPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={openImagePicker}
+                        onClick={openCamera}
                         disabled={isChatClosed}
                         className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
-                        aria-label="Add image"
+                        aria-label="Open camera"
                       >
                         <Camera className="h-4 w-4" />
                       </button>
@@ -1012,24 +1112,9 @@ export function TicketDetailPage() {
                       >
                         <Smile className="h-4 w-4" />
                       </button>
-                      <button
-                        type="button"
-                        onClick={handleMicClick}
-                        disabled={isChatClosed}
-                        className={`flex h-9 w-9 items-center justify-center rounded-full border transition ${
-                          isListening
-                            ? "border-red-300 bg-red-50 text-red-600 dark:border-red-600 dark:bg-red-950/40 dark:text-red-300"
-                            : "border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
-                        }`}
-                        aria-label="Voice message"
-                      >
-                        <Mic className="h-4 w-4" />
-                      </button>
                     </div>
                     <span className="text-xs text-slate-400">
-                      {isListening
-                        ? "Listening... tap mic to stop"
-                        : "Enter to send, Shift+Enter for new line"}
+                      Enter to send, Shift+Enter for new line
                     </span>
                   </div>
                   <input
@@ -1040,17 +1125,55 @@ export function TicketDetailPage() {
                     onChange={handleFileSelection}
                     accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
                   />
-                  <input
-                    ref={imageInputRef}
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handleFileSelection}
-                  />
                 </div>
               </form>
             </div>
+
+            {isCameraOpen ? (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+                <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950">
+                  <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">Camera</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Capture a photo and send it directly</p>
+                    </div>
+                    <Button type="button" variant="outline" onClick={closeCamera}>
+                      Close
+                    </Button>
+                  </div>
+                  <div className="space-y-4 p-4">
+                    {cameraError ? (
+                      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-200">
+                        {cameraError}
+                      </div>
+                    ) : null}
+                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900">
+                      <video
+                        ref={cameraVideoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="aspect-video w-full object-cover"
+                      />
+                    </div>
+                    <canvas ref={cameraCanvasRef} className="hidden" />
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {isCameraReady ? "Camera is ready." : "Waiting for camera permission..."}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button type="button" variant="outline" onClick={closeCamera}>
+                          Cancel
+                        </Button>
+                        <Button type="button" onClick={captureCameraPhoto} disabled={!isCameraReady || isCapturingPhoto}>
+                          {isCapturingPhoto ? "Sending..." : "Capture & Send"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
         <Card className={showDetailsOnMobile ? "lg:block" : "hidden lg:block"}>

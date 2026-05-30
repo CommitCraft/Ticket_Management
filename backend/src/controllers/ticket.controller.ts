@@ -370,12 +370,18 @@ export const replyToTicket = asyncHandler(async (req: Request, res: Response) =>
   // Admins can reply to any ticket
   // Super admins can reply to any ticket
 
+  const message = typeof req.body.message === 'string' ? req.body.message.trim() : '';
+  const attachments = buildAttachments(req.files as Express.Multer.File[] | undefined);
+  if (!message && attachments.length === 0) {
+    throw new ApiError(400, 'Reply cannot be empty');
+  }
+
   const reply = await addTicketReply({
     ticketId: String(req.params.id),
     authorId: req.user!._id.toString(),
-    message: req.body.message,
+    message,
     isInternal: req.body.isInternal,
-    attachments: buildAttachments(req.files as Express.Multer.File[] | undefined)
+    attachments
   });
   const populatedReply = await TicketReply.findById(reply._id).populate('authorId');
   res.status(201).json({ reply: populatedReply });

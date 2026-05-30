@@ -121,9 +121,17 @@ export async function addTicketReply(input: {
   attachments?: Array<{ name: string; url: string; mimeType?: string; size?: number }>;
 }) {
   const reply = await TicketReply.create(input);
+  const messageText = input.message.trim();
+  const attachmentCount = input.attachments?.length ?? 0;
+  const replySummary =
+    messageText ||
+    (attachmentCount > 0
+      ? `${attachmentCount} attachment${attachmentCount === 1 ? '' : 's'} sent`
+      : 'New reply');
+
   await Ticket.findByIdAndUpdate(input.ticketId, {
     lastActivityAt: new Date(),
-    $push: { timeline: { action: input.isInternal ? 'internal_note' : 'reply', note: input.message, by: input.authorId } }
+    $push: { timeline: { action: input.isInternal ? 'internal_note' : 'reply', note: replySummary, by: input.authorId } }
   });
 
   const ticket = await Ticket.findById(input.ticketId).populate('assignedAgentId');
@@ -140,7 +148,7 @@ export async function addTicketReply(input: {
         userId: agentId,
         type: 'ticket_reply',
         title: `Reply on ticket ${ticket.ticketId}`,
-        body: input.message.substring(0, 100),
+        body: replySummary.substring(0, 100),
         ticketId: ticket._id.toString()
       });
     } else if (authorId !== creatorId) {
@@ -149,7 +157,7 @@ export async function addTicketReply(input: {
         userId: creatorId,
         type: 'ticket_reply',
         title: `Update on ticket ${ticket.ticketId}`,
-        body: input.message.substring(0, 100),
+        body: replySummary.substring(0, 100),
         ticketId: ticket._id.toString()
       });
     }
@@ -165,7 +173,7 @@ export async function addTicketReply(input: {
             userId: adminId,
             type: 'ticket_reply',
             title: `High-priority update on ticket ${ticket.ticketId}`,
-            body: input.message.substring(0, 100),
+            body: replySummary.substring(0, 100),
             ticketId: ticket._id.toString()
           });
         }

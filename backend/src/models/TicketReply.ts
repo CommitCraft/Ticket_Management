@@ -14,7 +14,7 @@ const ticketReplySchema = new Schema(
   {
     ticketId: { type: Schema.Types.ObjectId, ref: 'Ticket', required: true },
     authorId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    message: { type: String, required: true },
+    message: { type: String, default: '' },
     isInternal: { type: Boolean, default: false },
     attachments: [replyAttachmentSchema]
   },

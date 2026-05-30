@@ -29,7 +29,7 @@ export const updateTicketSchema = z.object({
 });
 
 export const replyTicketSchema = z.object({
-  message: z.string().min(1),
+  message: z.string().optional(),
   isInternal: z.boolean().optional()
 });
 
