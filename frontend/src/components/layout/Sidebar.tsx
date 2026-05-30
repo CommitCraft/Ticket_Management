@@ -1,4 +1,4 @@
-import { Archive, BarChart3, Boxes, ChevronRight, FileText, LayoutDashboard, Lock, LogOut, PanelLeftClose, Shield, Ticket, Users } from 'lucide-react';
+import { Archive, BarChart3, Boxes, FileText, LayoutDashboard, Lock, LogOut, Shield, Ticket, Users } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { cn } from '../../utils/cn';
@@ -21,13 +21,11 @@ export function Sidebar({
   role,
   mobile = false,
   collapsed = false,
-  onToggleCollapse,
   onLogout
 }: {
   role?: RoleKey;
   mobile?: boolean;
   collapsed?: boolean;
-  onToggleCollapse?: () => void;
   onLogout?: () => void;
 }) {
   const isCompact = collapsed && !mobile;
@@ -35,55 +33,43 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        'sticky top-0 h-screen shrink-0 border-r border-white/60 bg-white/70 backdrop-blur-xl transition-all duration-300 dark:border-slate-800 dark:bg-slate-950/70',
-        isCompact ? 'w-20 px-3 py-5' : 'w-72 p-5',
+        'sticky top-0 flex h-screen shrink-0 flex-col border-r border-white/60 bg-white/70 px-3 py-5 backdrop-blur-xl transition-all duration-300 dark:border-slate-800 dark:bg-slate-950/70',
+        isCompact ? 'w-20' : 'w-62',
         mobile ? 'block lg:hidden' : 'hidden lg:block'
       )}
     >
-      <div className={cn('mb-8 flex items-start justify-between gap-3', isCompact && 'flex-col items-center')}>
-        <div className={cn(isCompact && 'text-center')}>
-          <AplosLogo
-            size={isCompact ? 'sm' : 'md'}
-            showTagline={!isCompact}
-            taglineColor={isCompact ? '#64748b' : '#475569'}
-            align={isCompact ? 'center' : 'start'}
-          />
-        </div>
-        {onToggleCollapse ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onToggleCollapse}
-            className="hidden lg:inline-flex"
-            aria-label={isCompact ? 'Expand sidebar' : 'Collapse sidebar'}
-            title={isCompact ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {isCompact ? <ChevronRight className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-          </Button>
-        ) : null}
+      <div className="mb-5 rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/60">
+        <AplosLogo
+          size={isCompact ? 'sm' : 'md'}
+          showTagline={!isCompact}
+          taglineColor={isCompact ? '#64748b' : '#475569'}
+          align={isCompact ? 'center' : 'start'}
+        />
       </div>
-      <nav className={cn('space-y-1', isCompact && 'space-y-2')}>
-        {navItems.filter((item) => !item.roles || (role && item.roles.includes(role))).map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            title={isCompact ? item.label : undefined}
-            aria-label={item.label}
-            className={({ isActive }) => cn(
-              'flex items-center rounded-xl py-2 text-sm font-medium transition',
-              isCompact ? 'justify-center px-2' : 'gap-3 px-3',
-              isActive ? 'bg-slate-900 text-white dark:bg-blue-500' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
-            )}
-          >
-            <item.icon className="h-4 w-4" />
-            {!isCompact ? <span>{item.label}</span> : null}
-          </NavLink>
-        ))}
+
+      <nav className={cn('rounded-2xl border border-slate-200 bg-white/70 p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/60', isCompact && 'p-2')}>
+        <div className={cn('space-y-1', isCompact && 'space-y-2')}>
+          {navItems.filter((item) => !item.roles || (role && item.roles.includes(role))).map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              title={isCompact ? item.label : undefined}
+              aria-label={item.label}
+              className={({ isActive }) => cn(
+                'flex items-center rounded-xl py-2 text-sm font-medium transition',
+                isCompact ? 'justify-center px-2' : 'gap-3 px-3',
+                isActive ? 'bg-slate-900 text-white dark:bg-blue-500' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+              )}
+            >
+              <item.icon className="h-4 w-4" />
+              {!isCompact ? <span>{item.label}</span> : null}
+            </NavLink>
+          ))}
+        </div>
       </nav>
 
       {onLogout ? (
-        <div className={cn('mt-auto pt-6', isCompact && 'pt-4')}>
+        <div className={cn('mt-auto pt-4', isCompact && 'pt-3')}>
           <Button
             type="button"
             variant="outline"

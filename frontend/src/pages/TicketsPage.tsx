@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Button } from '../components/ui/button';
@@ -108,6 +108,11 @@ export function TicketsPage() {
     return null;
   };
 
+  const formatDateTime = (value: string) => {
+    const date = new Date(value);
+    return `${format(date, 'dd MMM yyyy')} • ${format(date, 'hh:mm a')}`;
+  };
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -206,12 +211,10 @@ export function TicketsPage() {
                           </div>
                         </TableCell>
                         <TableCell className="px-2.5 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400">
-                          {format(new Date(ticket.createdAt), 'dd MMM yyyy')}
-                          <br />
-                          <span className="text-xs text-slate-500 dark:text-slate-500">{format(new Date(ticket.createdAt), 'hh:mm a')}</span>
+                          {formatDateTime(ticket.createdAt)}
                         </TableCell>
                         <TableCell className="px-2.5 py-2.5 text-sm text-slate-600 dark:text-slate-400">
-                          {formatDistanceToNow(new Date(ticket.updatedAt), { addSuffix: true })}
+                          {formatDateTime(ticket.updatedAt)}
                         </TableCell>
                       </>
                     ) : (
@@ -304,12 +307,10 @@ export function TicketsPage() {
                           )}
                         </TableCell>
                         <TableCell className="px-2.5 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400">
-                          {format(new Date(ticket.createdAt), 'dd MMM yyyy')}
-                          <br />
-                          <span className="text-xs text-slate-500 dark:text-slate-500">{format(new Date(ticket.createdAt), 'hh:mm a')}</span>
+                          {formatDateTime(ticket.createdAt)}
                         </TableCell>
                         <TableCell className="px-2.5 py-2.5 text-sm text-slate-600 dark:text-slate-400">
-                          {formatDistanceToNow(new Date(ticket.updatedAt), { addSuffix: true })}
+                          {formatDateTime(ticket.updatedAt)}
                         </TableCell>
                       </>
                     )}

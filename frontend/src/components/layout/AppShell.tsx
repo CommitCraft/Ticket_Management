@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { ChevronRight, PanelLeftClose } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
+import { Button } from '../ui/button';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { clearCredentials } from '../../store/authSlice';
@@ -35,10 +37,22 @@ export function AppShell() {
       <Sidebar
         role={role}
         collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed((value) => !value)}
         onLogout={handleLogout}
       />
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="relative z-20 flex min-w-0 flex-1 flex-col overflow-hidden">
+        {/* <div className="relative hidden lg:block">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setSidebarCollapsed((value) => !value)}
+            className="absolute -left-3 top-4 z-50 h-9 w-9 rounded-full border-slate-200 bg-white p-0 shadow-md dark:border-slate-700 dark:bg-slate-950"
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          </Button>
+        </div> */}
         <Navbar onMenuClick={() => setMobileMenuOpen((value) => !value)} />
         <main className="min-h-0 flex-1 min-w-0 overflow-y-auto px-4 py-6 md:px-6">
           <Outlet />
