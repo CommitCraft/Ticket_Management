@@ -27,26 +27,36 @@ export function ResetPasswordPage() {
 
   return (
     <AuthLayout eyebrow="Get in touch" title="Reset your password" description="Choose a new secure password to regain access to your helpdesk account." icon="🔒">
-      <Card className="w-full max-w-md overflow-hidden border-slate-200 shadow-none dark:border-slate-800 dark:bg-slate-900 lg:shadow-none">
-        <div className="h-2 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-400" />
-        <CardHeader className="space-y-2 pb-3 pt-7 text-center sm:pt-8">
-          <CardTitle className="text-2xl font-black tracking-tight sm:text-3xl">Reset password</CardTitle>
-          <CardDescription className="text-sm text-slate-500 dark:text-slate-400">Choose a new secure password.</CardDescription>
+      <Card className="w-full max-w-md overflow-hidden border-0 shadow-lg dark:border-slate-800 dark:bg-slate-800 lg:shadow-lg bg-white rounded-2xl">
+        <CardHeader className="space-y-3 pb-6 pt-8 text-center bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-800/50">
+          <CardTitle className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Reset password</CardTitle>
+          <CardDescription className="text-sm text-slate-600 dark:text-slate-300">Choose a new secure password</CardDescription>
         </CardHeader>
-        <CardContent className="px-5 pb-7 pt-3 sm:px-8">
-          <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit(onSubmit)}>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="password">New password</label>
-              <Input id="password" type="password" placeholder="Enter new password" className="h-12 rounded-xl border-slate-200 bg-white shadow-sm focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-950" {...register('password')} />
-              {errors.password ? <p className="text-xs text-red-500">{errors.password.message}</p> : null}
+        <CardContent className="px-6 pb-8 pt-6 bg-slate-50/50 dark:bg-slate-800/50">
+          <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+            <div className="space-y-2.5 bg-white dark:bg-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-600 transition-all hover:border-slate-300 dark:hover:border-slate-500">
+              <label className="text-sm font-semibold text-slate-700 dark:text-slate-200" htmlFor="password">New Password</label>
+              <Input 
+                id="password" 
+                type="password" 
+                placeholder="••••••••" 
+                className="h-10 rounded-lg border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 shadow-none transition-all focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400 dark:focus-visible:border-blue-400" 
+                {...register('password')} 
+              />
+              {errors.password && <p className="text-xs font-medium text-red-600 dark:text-red-400 flex items-center gap-1 mt-1">⚠ {errors.password.message || 'Password must be at least 8 characters'}</p>}
+              {!errors.password && <p className="text-xs text-slate-500 dark:text-slate-400">Min 8 characters</p>}
             </div>
 
-            <Button className="h-12 w-full rounded-xl bg-slate-900 text-base font-semibold text-white hover:bg-slate-800 dark:bg-blue-500 dark:hover:bg-blue-400" type="submit" disabled={isSubmitting || !token}>
-              {isSubmitting ? 'Resetting...' : 'Reset Password'}
+            <Button 
+              className="h-11 w-full rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-base font-semibold text-white shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed dark:from-blue-600 dark:to-blue-700 dark:hover:from-blue-700 dark:hover:to-blue-800" 
+              type="submit" 
+              disabled={isSubmitting || !token}
+            >
+              {isSubmitting ? 'Resetting password...' : 'Reset Password'}
             </Button>
 
-            <div className="text-center text-sm text-slate-500 dark:text-slate-400">
-              <Link to="/login" className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+            <div className="text-center text-sm text-slate-600 dark:text-slate-400 pt-2">
+              <Link to="/login" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors dark:text-blue-400 dark:hover:text-blue-300">
                 Back to sign in
               </Link>
             </div>

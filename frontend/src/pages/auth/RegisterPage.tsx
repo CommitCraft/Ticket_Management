@@ -35,54 +35,88 @@ export function RegisterPage() {
 
   return (
     <AuthLayout eyebrow="Get in touch" title="Create your account" description="Join the platform to raise tickets, follow progress, and stay connected with support updates." icon="🚀">
-      <Card className="w-full max-w-md overflow-hidden border-slate-200 shadow-none dark:border-slate-800 dark:bg-slate-900 lg:shadow-none">
-        <div className="h-2 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-400" />
-        <CardHeader className="space-y-2 pb-3 pt-7 text-center sm:pt-8">
-          <CardTitle className="text-2xl font-black tracking-tight sm:text-3xl">Create account</CardTitle>
-          <CardDescription className="text-sm text-slate-500 dark:text-slate-400">Register to raise and track tickets.</CardDescription>
+      <Card className="w-full max-w-md overflow-hidden border-0 shadow-lg dark:border-slate-800 dark:bg-slate-800 lg:shadow-lg bg-white rounded-2xl">
+        <CardHeader className="space-y-3 pb-6 pt-8 text-center bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-800/50">
+          <CardTitle className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Create account</CardTitle>
+          <CardDescription className="text-sm text-slate-600 dark:text-slate-300">Register to raise and track tickets</CardDescription>
         </CardHeader>
-        <CardContent className="px-5 pb-7 pt-3 sm:px-8">
-          <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit(onSubmit)}>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="fullName">Full name</label>
-              <Input id="fullName" placeholder="John Doe" className={`h-12 rounded-xl shadow-sm focus-visible:ring-blue-500 ${errors.fullName ? 'border-red-300 bg-red-50 dark:border-red-500 dark:bg-red-950/20' : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950'}`} {...register('fullName')} />
-              {errors.fullName ? <p className="text-xs text-red-500 font-medium">{errors.fullName.message}</p> : <p className="text-xs text-slate-500 dark:text-slate-400">Your full name</p>}
+        <CardContent className="px-6 pb-8 pt-6 bg-slate-50/50 dark:bg-slate-800/50">
+          <form className="space-y-3.5" onSubmit={handleSubmit(onSubmit)}>
+            <div className="space-y-2 bg-white dark:bg-slate-700/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-600 transition-all hover:border-slate-300 dark:hover:border-slate-500">
+              <label className="text-sm font-semibold text-slate-700 dark:text-slate-200" htmlFor="fullName">Full Name</label>
+              <Input 
+                id="fullName" 
+                placeholder="John Doe" 
+                className={`h-9 rounded-lg shadow-none transition-all focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-300 ${errors.fullName ? 'border-red-300 bg-red-50 dark:border-red-500 dark:bg-red-950/20' : 'border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-700'}`} 
+                {...register('fullName')} 
+              />
+              {errors.fullName && <p className="text-xs font-medium text-red-600 dark:text-red-400 mt-1">⚠ {errors.fullName.message}</p>}
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="companyName">Company name</label>
-              <Input id="companyName" placeholder="Acme Corp" className={`h-12 rounded-xl shadow-sm focus-visible:ring-blue-500 ${errors.companyName ? 'border-red-300 bg-red-50 dark:border-red-500 dark:bg-red-950/20' : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950'}`} {...register('companyName')} />
-              {errors.companyName ? <p className="text-xs text-red-500 font-medium">{errors.companyName.message}</p> : <p className="text-xs text-slate-500 dark:text-slate-400\">Organization name</p>}
+            <div className="space-y-2 bg-white dark:bg-slate-700/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-600 transition-all hover:border-slate-300 dark:hover:border-slate-500">
+              <label className="text-sm font-semibold text-slate-700 dark:text-slate-200" htmlFor="companyName">Company Name</label>
+              <Input 
+                id="companyName" 
+                placeholder="Acme Corp" 
+                className={`h-9 rounded-lg shadow-none transition-all focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-300 ${errors.companyName ? 'border-red-300 bg-red-50 dark:border-red-500 dark:bg-red-950/20' : 'border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-700'}`} 
+                {...register('companyName')} 
+              />
+              {errors.companyName && <p className="text-xs font-medium text-red-600 dark:text-red-400">⚠ {errors.companyName.message}</p>}
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="phoneNumber">Phone number</label>
-              <Input id="phoneNumber" type="tel" placeholder="5551234567" inputMode="numeric" pattern="[0-9]{7,20}" className={`h-12 rounded-xl shadow-sm focus-visible:ring-blue-500 ${errors.phoneNumber ? 'border-red-300 bg-red-50 dark:border-red-500 dark:bg-red-950/20' : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950'}`} {...register('phoneNumber')} />
-              {errors.phoneNumber ? <p className="text-xs text-red-500 font-medium">{errors.phoneNumber.message}</p> : <p className="text-xs text-slate-500 dark:text-slate-400">Your contact number</p>}
+            <div className="space-y-2 bg-white dark:bg-slate-700/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-600 transition-all hover:border-slate-300 dark:hover:border-slate-500">
+              <label className="text-sm font-semibold text-slate-700 dark:text-slate-200" htmlFor="phoneNumber">Phone Number</label>
+              <Input 
+                id="phoneNumber" 
+                type="tel" 
+                placeholder="5551234567" 
+                inputMode="numeric" 
+                pattern="[0-9]{7,20}" 
+                className={`h-9 rounded-lg shadow-none transition-all focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-300 ${errors.phoneNumber ? 'border-red-300 bg-red-50 dark:border-red-500 dark:bg-red-950/20' : 'border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-700'}`} 
+                {...register('phoneNumber')} 
+              />
+              {errors.phoneNumber && <p className="text-xs font-medium text-red-600 dark:text-red-400 mt-1">⚠ {errors.phoneNumber.message}</p>}
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="email">Email address</label>
-              <Input id="email" type="email" placeholder="name@example.com" className={`h-12 rounded-xl shadow-sm focus-visible:ring-blue-500 ${errors.email ? 'border-red-300 bg-red-50 dark:border-red-500 dark:bg-red-950/20' : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950'}`} {...register('email')} />
-              {errors.email ? <p className="text-xs text-red-500 font-medium">{errors.email.message}</p> : <p className="text-xs text-slate-500 dark:text-slate-400">Used to sign in</p>}
+            <div className="space-y-2 bg-white dark:bg-slate-700/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-600 transition-all hover:border-slate-300 dark:hover:border-slate-500">
+              <label className="text-sm font-semibold text-slate-700 dark:text-slate-200" htmlFor="email">Email Address</label>
+              <Input 
+                id="email" 
+                type="email" 
+                placeholder="you@example.com" 
+                className={`h-9 rounded-lg shadow-none transition-all focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-300 ${errors.email ? 'border-red-300 bg-red-50 dark:border-red-500 dark:bg-red-950/20' : 'border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-700'}`} 
+                {...register('email')} 
+              />
+              {errors.email && <p className="text-xs font-medium text-red-600 dark:text-red-400 mt-1">⚠ {errors.email.message}</p>}
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="password">Password</label>
-              <Input id="password" type="password" placeholder="••••••••" className={`h-12 rounded-xl shadow-sm focus-visible:ring-blue-500 ${errors.password ? 'border-red-300 bg-red-50 dark:border-red-500 dark:bg-red-950/20' : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950'}`} {...register('password')} />
-              {errors.password ? <p className="text-xs text-red-500 font-medium">{errors.password.message}</p> : <p className="text-xs text-slate-500 dark:text-slate-400">Min 8 chars with uppercase & number</p>}
+            <div className="space-y-2 bg-white dark:bg-slate-700/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-600 transition-all hover:border-slate-300 dark:hover:border-slate-500">
+              <label className="text-sm font-semibold text-slate-700 dark:text-slate-200" htmlFor="password">Password</label>
+              <Input 
+                id="password" 
+                type="password" 
+                placeholder="••••••••" 
+                className={`h-9 rounded-lg shadow-none transition-all focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-300 ${errors.password ? 'border-red-300 bg-red-50 dark:border-red-500 dark:bg-red-950/20' : 'border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-700'}`} 
+                {...register('password')} 
+              />
+              {errors.password && <p className="text-xs font-medium text-red-600 dark:text-red-400 mt-1">⚠ {errors.password.message}</p>}
+              {!errors.password && <p className="text-xs text-slate-500 dark:text-slate-400">Min 8 chars with uppercase & number</p>}
             </div>
 
-            <div className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-slate-500 dark:text-slate-400">Already have an account?</span>
-              <Link to="/login" className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+            <Button 
+              className="h-11 w-full rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-base font-semibold text-white shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 active:scale-95 dark:from-blue-600 dark:to-blue-700 dark:hover:from-blue-700 dark:hover:to-blue-800" 
+              type="submit" 
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Creating account...' : 'Create Account'}
+            </Button>
+
+            <div className="flex items-center justify-center gap-2 text-sm pt-2\">
+              <span className="text-slate-600 dark:text-slate-400\">Already have an account?</span>
+              <Link to="/login" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors dark:text-blue-400 dark:hover:text-blue-300\">
                 Sign in
               </Link>
             </div>
-
-            <Button className="h-12 w-full rounded-xl bg-slate-900 text-base font-semibold text-white hover:bg-slate-800 dark:bg-blue-500 dark:hover:bg-blue-400" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create Account'}
-            </Button>
           </form>
         </CardContent>
       </Card>

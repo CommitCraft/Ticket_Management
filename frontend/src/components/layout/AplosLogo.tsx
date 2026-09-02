@@ -38,7 +38,10 @@ export default function AplosLogo({
       display: 'flex',
       flexDirection: 'column',
       alignItems: align,
-      textAlign: align
+      textAlign: align,
+      backgroundColor: '#0f172a',
+      padding: '12px 16px',
+      borderRadius: '8px'
     },
     logoText: {
       display: 'flex',
